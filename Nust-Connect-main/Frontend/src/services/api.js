@@ -1,0 +1,166 @@
+import axios from 'axios';
+
+// Create axios instance with base URL
+const api = axios.create({
+    baseURL: 'http://localhost:8081/api',
+    headers: {
+        'Content-Type': 'application/json',
+    },
+});
+
+// Request interceptor to add JWT token to headers
+api.interceptors.request.use(
+    (config) => {
+        const token = localStorage.getItem('token');
+        if (token) {
+            config.headers.Authorization = `Bearer ${token}`;
+        }
+        return config;
+    },
+    (error) => {
+        return Promise.reject(error);
+    }
+);
+
+// Response interceptor to handle errors
+api.interceptors.response.use(
+    (response) => response,
+    (error) => {
+        if (error.response?.status === 401) {
+            // Token expired or invalid - logout user
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            window.location.href = '/login';
+        }
+        return Promise.reject(error);
+    }
+);
+
+// Auth APIs
+export const authAPI = {
+    login: (credentials) => api.post('/auth/login', credentials),
+    register: (userData) => api.post('/auth/register', userData),
+    verifyEmail: (token) => api.get(`/auth/verify-email?token=${token}`),
+    forgotPassword: (email) => api.post('/auth/forgot-password', { email }),
+    resetPassword: (token, newPassword) =>
+        api.post('/auth/reset-password', { token, newPassword }),
+    changePassword: (userId, passwords) =>
+        api.post(`/auth/change-password/${userId}`, passwords),
+};
+
+// User APIs
+export const userAPI = {
+    getProfile: (userId) => api.get(`/users/${userId}`),
+    updateProfile: (userId, data) => api.put(`/users/${userId}`, data),
+    getAllUsers: () => api.get('/users'),
+    uploadFile: (formData) => api.post('/files/upload', formData, {
+        headers: {
+            'Content-Type': 'multipart/form-data',
+        },
+    }),
+};
+
+// Post APIs
+export const postAPI = {
+    getAllPosts: (page = 0, size = 10) =>
+        api.get(`/posts?page=${page}&size=${size}`),
+    getUserPosts: (userId) => api.get(`/posts/user/${userId}`),
+    getPost: (postId) => api.get(`/posts/${postId}`),
+    createPost: (userId, postData) =>
+        api.post(`/posts?userId=${userId}`, postData),
+    updatePost: (postId, postData) => api.put(`/posts/${postId}`, postData),
+    deletePost: (postId) => api.delete(`/posts/${postId}`),
+    likePost: (postId, userId) =>
+        api.post(`/posts/${postId}/like?userId=${userId}`),
+    unlikePost: (postId, userId) =>
+        api.delete(`/posts/${postId}/unlike?userId=${userId}`),
+    getComments: (postId) => api.get(`/posts/${postId}/comments`),
+    createComment: (postId, userId, content) =>
+        api.post(`/posts/${postId}/comments?userId=${userId}`, { content }),
+};
+
+// Event APIs
+export const eventAPI = {
+    getAllEvents: (page = 0, size = 10) =>
+        api.get(`/events?page=${page}&size=${size}`),
+    getUpcomingEvents: () => api.get('/events/upcoming'),
+    getEvent: (eventId) => api.get(`/events/${eventId}`),
+    createEvent: (creatorId, eventData) =>
+        api.post(`/events?creatorId=${creatorId}`, eventData),
+    registerForEvent: (eventId, userId) =>
+        api.post(`/events/${eventId}/register?userId=${userId}`),
+    unregisterFromEvent: (eventId, userId) =>
+        api.delete(`/events/${eventId}/unregister?userId=${userId}`),
+};
+
+// Marketplace APIs
+export const marketplaceAPI = {
+    getAllItems: (page = 0, size = 10) =>
+        api.get(`/marketplace/items?page=${page}&size=${size}`),
+    getItem: (itemId) => api.get(`/marketplace/items/${itemId}`),
+    createItem: (sellerId, itemData) =>
+        api.post(`/marketplace/items?sellerId=${sellerId}`, itemData),
+    updateItem: (itemId, itemData) =>
+        api.put(`/marketplace/items/${itemId}`, itemData),
+    deleteItem: (itemId) => api.delete(`/marketplace/items/${itemId}`),
+};
+
+// Ride Sharing APIs
+export const rideAPI = {
+    getAllRides: () => api.get('/rides'),
+    getUpcomingRides: () => api.get('/rides/upcoming'),
+    searchRides: (keyword) => api.get(`/rides/search?keyword=${keyword}`),
+    getRide: (rideId) => api.get(`/rides/${rideId}`),
+    createRide: (driverId, rideData) =>
+        api.post(`/rides?driverId=${driverId}`, rideData),
+    cancelRide: (rideId) => api.patch(`/rides/${rideId}/cancel`),
+    deleteRide: (rideId) => api.delete(`/rides/${rideId}`),
+    requestRide: (rideId, userId) =>
+        api.post(`/rides/${rideId}/request?userId=${userId}`),
+    cancelRequest: (rideId, userId) =>
+        api.delete(`/rides/${rideId}/cancel?userId=${userId}`),
+};
+
+// Lost & Found APIs
+export const lostFoundAPI = {
+    getLostItems: () => api.get('/lost-found/lost'),
+    getFoundItems: () => api.get('/lost-found/found'),
+    reportLostItem: (userId, itemData) =>
+        api.post(`/lost-found/lost?userId=${userId}`, itemData),
+    reportFoundItem: (userId, itemData) =>
+        api.post(`/lost-found/found?userId=${userId}`, itemData),
+};
+
+// Notification APIs
+export const notificationAPI = {
+    getNotifications: (userId) => api.get(`/notifications/user/${userId}`),
+    markAsRead: (notificationId) =>
+        api.patch(`/notifications/${notificationId}/read`),
+    markAllAsRead: (userId) =>
+        api.patch(`/notifications/user/${userId}/read-all`),
+};
+
+// Message APIs
+export const messageAPI = {
+    sendMessage: (senderId, receiverId, content) =>
+        api.post(`/messages/send/${receiverId}?senderId=${senderId}`, { content }),
+    getConversation: (userId1, userId2) =>
+        api.get(`/messages/conversation/${userId1}/${userId2}`),
+    getConversationPartners: (userId) => api.get(`/messages/partners/${userId}`),
+    getUnreadMessages: (userId) => api.get(`/messages/unread/${userId}`),
+    markAsRead: (messageId) => api.patch(`/messages/${messageId}/read`),
+};
+
+// Club APIs
+export const clubAPI = {
+    getAllClubs: () => api.get('/clubs'),
+    getClub: (clubId) => api.get(`/clubs/${clubId}`),
+    createClub: (creatorId, clubData) =>
+        api.post(`/clubs?creatorId=${creatorId}`, clubData),
+    joinClub: (clubId, userId) =>
+        api.post(`/clubs/${clubId}/join?userId=${userId}`),
+    leaveClub: (clubId, userId) =>
+        api.delete(`/clubs/${clubId}/leave?userId=${userId}`),
+};
+
+export default api;
