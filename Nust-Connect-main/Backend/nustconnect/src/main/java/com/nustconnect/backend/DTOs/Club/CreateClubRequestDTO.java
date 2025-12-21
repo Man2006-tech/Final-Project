@@ -1,0 +1,28 @@
+package com.nustconnect.backend.DTOs.Club;
+
+import com.nustconnect.backend.Enums.ClubCategory;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class CreateClubRequestDTO {
+    @NotBlank(message = "Club name is required")
+    @Size(min = 3, max = 150)
+    private String name;
+
+    @NotBlank(message = "Description is required")
+    @Size(max = 2000)
+    private String description;
+
+    private ClubCategory category;
+    private String logoUrl;
+    private String coverImageUrl;
+    private String contactEmail;
+}

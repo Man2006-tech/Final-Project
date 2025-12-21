@@ -1,0 +1,40 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Maven
+target/
+!.mvn/wrapper/maven-wrapper.jar
+
+# Production Build
+build/
+dist/
+
+# Uploaded Files
+uploads/
+**/uploads/
+
+# IDE Settings
+.vscode/
+.idea/
+*.iml
+*.swp
+
+# OS Files
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment Variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
