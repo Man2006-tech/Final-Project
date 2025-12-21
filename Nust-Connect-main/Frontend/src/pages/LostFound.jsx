@@ -1,27 +1,31 @@
 import { useState, useEffect } from 'react';
-import { Search, MapPin, Clock, Plus, AlertCircle, CheckCircle, Phone, Mail, Loader2 } from 'lucide-react';
+import { Search, MapPin, Clock, Plus, AlertCircle, CheckCircle, Phone, Mail, Loader2, X, Image as ImageIcon } from 'lucide-react';
 import Card from '../components/common/Card';
 import Button from '../components/common/Button';
 import { lostFoundAPI } from '../services/api';
+import { uploadToCloudinary, validateImageFile } from '../utils/imageUpload'; // ADD THIS IMPORT
 import { useAuth } from '../context/AuthContext';
 
 const LostFound = () => {
     const { user } = useAuth();
-    const [activeTab, setActiveTab] = useState('lost'); // lost, found
+    const [activeTab, setActiveTab] = useState('lost');
     const [lostItems, setLostItems] = useState([]);
     const [foundItems, setFoundItems] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [showModal, setShowModal] = useState(false);
-    const [reportType, setReportType] = useState('lost'); // lost or found
+    const [reportType, setReportType] = useState('lost');
     const [submitting, setSubmitting] = useState(false);
+    const [uploadingImage, setUploadingImage] = useState(false); // ADD THIS STATE
     const [success, setSuccess] = useState('');
+    
     const [formData, setFormData] = useState({
         itemName: '',
         description: '',
         location: '',
         dateOccurred: '',
-        contactInfo: ''
+        contactInfo: '',
+        imageUrl: '' // ADD THIS FIELD
     });
 
     useEffect(() => {
@@ -66,11 +70,14 @@ const LostFound = () => {
         setReportType('lost');
         setError('');
         setSuccess('');
-        // Pre-fill contact info from user's email
-        setFormData(prev => ({
-            ...prev,
-            contactInfo: user?.email || user?.phone || ''
-        }));
+        setFormData({
+            itemName: '',
+            description: '',
+            location: '',
+            dateOccurred: '',
+            contactInfo: user?.email || user?.phone || '',
+            imageUrl: '' // RESET IMAGE
+        });
     };
 
     const handleChange = (e) => {
@@ -79,6 +86,45 @@ const LostFound = () => {
             [e.target.name]: e.target.value,
         });
     };
+
+    // ============================================
+    // IMAGE UPLOAD HANDLER - ADD THIS FUNCTION
+    // ============================================
+    const handleImageUpload = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        // Validate file
+        const validation = validateImageFile(file, 5); // Max 5MB
+        if (!validation.valid) {
+            setError(validation.error);
+            setTimeout(() => setError(''), 3000);
+            return;
+        }
+
+        setUploadingImage(true);
+        setError('');
+
+        try {
+            // Upload to Cloudinary
+            const imageUrl = await uploadToCloudinary(file);
+            
+            setFormData(prev => ({
+                ...prev,
+                imageUrl: imageUrl
+            }));
+
+            setSuccess('Image uploaded successfully!');
+            setTimeout(() => setSuccess(''), 3000);
+        } catch (error) {
+            console.error('Upload failed', error);
+            setError('Failed to upload image. Please try again.');
+            setTimeout(() => setError(''), 3000);
+        } finally {
+            setUploadingImage(false);
+        }
+    };
+    // ============================================
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -95,8 +141,8 @@ const LostFound = () => {
             const itemData = {
                 itemName: formData.itemName,
                 description: formData.description,
-                contactInfo: user.email || '',
-                imageUrl: null,
+                contactInfo: user.email || formData.contactInfo || '',
+                imageUrl: formData.imageUrl || null, // INCLUDE IMAGE URL
             };
 
             if (reportType === 'lost') {
@@ -116,13 +162,11 @@ const LostFound = () => {
                 description: '',
                 location: '',
                 dateOccurred: '',
-                contactInfo: ''
+                contactInfo: '',
+                imageUrl: ''
             });
 
-            // Refresh items list
             fetchItems();
-
-            // Clear success message after 5 seconds
             setTimeout(() => setSuccess(''), 5000);
         } catch (err) {
             console.error('Failed to report item:', err);
@@ -249,13 +293,6 @@ const LostFound = () => {
                 </div>
             )}
 
-            {/* Error State */}
-            {error && (
-                <Card className="bg-red-50 border-red-200">
-                    <p className="text-red-800 text-center">{error}</p>
-                </Card>
-            )}
-
             {/* Empty State */}
             {!loading && !error && filteredItems.length === 0 && (
                 <Card className="text-center py-12">
@@ -281,16 +318,24 @@ const LostFound = () => {
                             }`}
                         >
                             <div className="flex items-start space-x-4">
-                                {/* Icon */}
-                                <div
-                                    className={`w-14 h-14 rounded-2xl flex items-center justify-center flex-shrink-0 ${
-                                        activeTab === 'lost' ? 'bg-red-100' : 'bg-green-100'
-                                    }`}
-                                >
-                                    {activeTab === 'lost' ? (
-                                        <AlertCircle className="text-red-600" size={28} />
+                                {/* Image or Icon */}
+                                <div className={`w-20 h-20 rounded-xl flex-shrink-0 overflow-hidden ${
+                                    item.imageUrl ? '' : activeTab === 'lost' ? 'bg-red-100' : 'bg-green-100'
+                                }`}>
+                                    {item.imageUrl ? (
+                                        <img 
+                                            src={item.imageUrl} 
+                                            alt={item.itemName}
+                                            className="w-full h-full object-cover"
+                                        />
                                     ) : (
-                                        <CheckCircle className="text-green-600" size={28} />
+                                        <div className="w-full h-full flex items-center justify-center">
+                                            {activeTab === 'lost' ? (
+                                                <AlertCircle className="text-red-600" size={32} />
+                                            ) : (
+                                                <CheckCircle className="text-green-600" size={32} />
+                                            )}
+                                        </div>
                                     )}
                                 </div>
 
@@ -373,7 +418,7 @@ const LostFound = () => {
                     <div>
                         <h3 className="font-semibold text-gray-900 mb-1">💡 How It Works</h3>
                         <p className="text-sm text-gray-700">
-                            Lost something? Report it here. Found something? Help return it to its owner. Together, we can keep our campus connected!
+                            Lost something? Report it here with a photo. Found something? Help return it to its owner. Together, we can keep our campus connected!
                         </p>
                     </div>
                 </div>
@@ -390,19 +435,7 @@ const LostFound = () => {
                                     onClick={() => setShowModal(false)}
                                     className="text-white hover:bg-white/20 rounded-lg p-2 transition-colors"
                                 >
-                                    <svg
-                                        className="w-6 h-6"
-                                        fill="none"
-                                        stroke="currentColor"
-                                        viewBox="0 0 24 24"
-                                    >
-                                        <path
-                                            strokeLinecap="round"
-                                            strokeLinejoin="round"
-                                            strokeWidth={2}
-                                            d="M6 18L18 6M6 6l12 12"
-                                        />
-                                    </svg>
+                                    <X size={24} />
                                 </button>
                             </div>
                         </div>
@@ -411,7 +444,7 @@ const LostFound = () => {
                             {/* Report Type Selection */}
                             <div>
                                 <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                    Report Type *
+                                    Report Type <span className="text-red-500">*</span>
                                 </label>
                                 <div className="grid grid-cols-2 gap-3">
                                     <button
@@ -439,10 +472,69 @@ const LostFound = () => {
                                 </div>
                             </div>
 
+                            {/* ============================================ */}
+                            {/* IMAGE UPLOAD SECTION - ADD THIS */}
+                            {/* ============================================ */}
+                            <div>
+                                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                    Photo (Optional but Recommended)
+                                </label>
+                                
+                                {formData.imageUrl ? (
+                                    <div className="relative rounded-xl overflow-hidden border-2 border-gray-200 group">
+                                        <img 
+                                            src={formData.imageUrl} 
+                                            alt="Item preview" 
+                                            className="w-full h-48 object-cover"
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => setFormData({ ...formData, imageUrl: '' })}
+                                            className="absolute top-2 right-2 p-2 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600"
+                                        >
+                                            <X size={16} />
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <div>
+                                        <input
+                                            type="file"
+                                            id="item-image-upload"
+                                            className="hidden"
+                                            accept="image/*"
+                                            onChange={handleImageUpload}
+                                            disabled={uploadingImage}
+                                        />
+                                        <label
+                                            htmlFor="item-image-upload"
+                                            className={`flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-xl cursor-pointer transition-all ${
+                                                uploadingImage
+                                                    ? 'border-blue-400 bg-blue-50'
+                                                    : 'border-gray-300 hover:border-orange-400 hover:bg-orange-50'
+                                            }`}
+                                        >
+                                            {uploadingImage ? (
+                                                <>
+                                                    <Loader2 className="animate-spin text-blue-500 mb-2" size={32} />
+                                                    <span className="text-sm font-medium text-blue-600">Uploading...</span>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <ImageIcon className="text-gray-400 mb-2" size={32} />
+                                                    <span className="text-sm font-medium text-gray-600">Click to upload image</span>
+                                                    <span className="text-xs text-gray-500 mt-1">PNG, JPG, GIF up to 5MB</span>
+                                                </>
+                                            )}
+                                        </label>
+                                    </div>
+                                )}
+                            </div>
+                            {/* ============================================ */}
+
                             {/* Item Name */}
                             <div>
                                 <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                    Item Name *
+                                    Item Name <span className="text-red-500">*</span>
                                 </label>
                                 <input
                                     type="text"
@@ -458,7 +550,7 @@ const LostFound = () => {
                             {/* Description */}
                             <div>
                                 <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                    Description *
+                                    Description <span className="text-red-500">*</span>
                                 </label>
                                 <textarea
                                     name="description"
@@ -474,7 +566,7 @@ const LostFound = () => {
                             {/* Location */}
                             <div>
                                 <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                    Location *
+                                    Location <span className="text-red-500">*</span>
                                 </label>
                                 <input
                                     type="text"
@@ -540,7 +632,7 @@ const LostFound = () => {
                                 <Button
                                     type="submit"
                                     loading={submitting}
-                                    disabled={submitting}
+                                    disabled={submitting || uploadingImage}
                                     className={`flex-1 ${
                                         reportType === 'lost'
                                             ? 'bg-red-600 hover:bg-red-700'

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { uploadToCloudinary, uploadMultipleImages, validateImageFile } from '../utils/imageUpload';
 import { ShoppingBag, Tag, Plus, Search, Filter, Heart, MessageCircle, Loader2, X, Trash2 } from 'lucide-react';
 import Card from '../components/common/Card';
 import Button from '../components/common/Button';
@@ -110,33 +111,41 @@ const Marketplace = () => {
     };
 
     const handleImageUpload = async (e) => {
-        const files = Array.from(e.target.files);
-        if (files.length === 0) return;
+    const files = Array.from(e.target.files);
+    if (files.length === 0) return;
 
-        setUploadingImage(true);
-        setError('');
-
-        try {
-            const uploadedUrls = [];
-            for (const file of files) {
-                const formDataImg = new FormData();
-                formDataImg.append('file', file);
-
-                const response = await userAPI.uploadFile(formDataImg);
-                uploadedUrls.push(response.data.fileDownloadUri);
-            }
-
-            setFormData({
-                ...formData,
-                imageUrls: [...formData.imageUrls, ...uploadedUrls]
-            });
-        } catch (err) {
-            console.error('Failed to upload images:', err);
-            setError('Failed to upload images. Please try again.');
-        } finally {
-            setUploadingImage(false);
+    // Validate all files
+    for (const file of files) {
+        const validation = validateImageFile(file, 5);
+        if (!validation.valid) {
+            setError(validation.error);
+            setTimeout(() => setError(''), 3000);
+            return;
         }
-    };
+    }
+
+    setUploadingImage(true);
+    setError('');
+
+    try {
+        // Upload multiple images to Cloudinary
+        const uploadedUrls = await uploadMultipleImages(files);
+        
+        setFormData({
+            ...formData,
+            imageUrls: [...formData.imageUrls, ...uploadedUrls]
+        });
+
+        setSuccess(`${files.length} image(s) uploaded successfully!`);
+        setTimeout(() => setSuccess(''), 3000);
+    } catch (err) {
+        console.error('Failed to upload images:', err);
+        setError('Failed to upload images. Please try again.');
+        setTimeout(() => setError(''), 3000);
+    } finally {
+        setUploadingImage(false);
+    }
+};
 
     const removeImage = (indexToRemove) => {
         setFormData({

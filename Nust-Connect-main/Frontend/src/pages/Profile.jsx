@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { userAPI } from '../services/api';
+import { uploadToCloudinary, validateImageFile } from '../utils/imageUpload'; // ADD THIS IMPORT
 import { User, Mail, Phone, Book, MapPin, Calendar, Camera, Save, X } from 'lucide-react';
 import Button from '../components/common/Button';
 
@@ -10,6 +11,7 @@ const Profile = () => {
     const [isEditing, setIsEditing] = useState(false);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
+    const [uploadingImage, setUploadingImage] = useState(false); // ADD THIS STATE
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
 
@@ -23,7 +25,6 @@ const Profile = () => {
         semester: '',
         bio: '',
         profilePicture: '',
-
     });
 
     const getImageUrl = (path) => {
@@ -63,7 +64,6 @@ const Profile = () => {
             setLoading(false);
         }
     };
-    // ... rest of logic remains, verify getImageUrl usage below ...
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -90,6 +90,46 @@ const Profile = () => {
         });
     };
 
+    // ============================================
+    // PROFILE PICTURE UPLOAD HANDLER - ADD THIS
+    // ============================================
+    const handleProfilePictureUpload = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        // Validate file
+        const validation = validateImageFile(file, 5); // Max 5MB
+        if (!validation.valid) {
+            setError(validation.error);
+            setTimeout(() => setError(''), 3000);
+            return;
+        }
+
+        setUploadingImage(true);
+        setError('');
+
+        try {
+            // Upload to Cloudinary
+            const imageUrl = await uploadToCloudinary(file);
+            
+            // Update form data with new image URL
+            setFormData(prev => ({
+                ...prev,
+                profilePicture: imageUrl
+            }));
+
+            setSuccess('Profile picture uploaded successfully!');
+            setTimeout(() => setSuccess(''), 3000);
+        } catch (error) {
+            console.error('Upload failed', error);
+            setError('Failed to upload image. Please try again.');
+            setTimeout(() => setError(''), 3000);
+        } finally {
+            setUploadingImage(false);
+        }
+    };
+    // ============================================
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         setSaving(true);
@@ -97,12 +137,7 @@ const Profile = () => {
         setSuccess('');
 
         try {
-            // Check api.js: updateProfile: (userId, data) => api.put(`/users/${userId}`, data)
-            // This maps to UserController.updateUser which handles both User and Profile updates now.
-
-            // Sanitize payload
             const payload = { ...formData };
-
             const response = await userAPI.updateProfile(authUser.userId, payload);
 
             setProfile(response.data);
@@ -134,8 +169,6 @@ const Profile = () => {
     return (
         <div className="max-w-4xl mx-auto space-y-6">
             {/* Header / Cover */}
-            {/* Header / Cover */}
-            {/* Header / Cover */}
             <div className="relative mb-24 z-0">
                 {/* Banner Background */}
                 <div className="h-48 rounded-3xl bg-gradient-to-r from-primary-600 to-secondary-600 shadow-2xl relative overflow-visible z-0">
@@ -153,7 +186,9 @@ const Profile = () => {
                                     )}
                                 </div>
 
-                                {/* Edit Overlay / Input */}
+                                {/* ============================================ */}
+                                {/* PROFILE PICTURE UPLOAD BUTTON - THIS SECTION */}
+                                {/* ============================================ */}
                                 {isEditing && (
                                     <>
                                         <input
@@ -161,35 +196,32 @@ const Profile = () => {
                                             id="profile-upload"
                                             className="hidden"
                                             accept="image/*"
-                                            onChange={async (e) => {
-                                                const file = e.target.files[0];
-                                                if (!file) return;
-
-                                                const formData = new FormData();
-                                                formData.append('file', file);
-
-                                                try {
-                                                    // Show loading state if needed
-                                                    const response = await userAPI.uploadFile(formData);
-                                                    setFormData(prev => ({
-                                                        ...prev,
-                                                        profilePicture: response.data.fileDownloadUri
-                                                    }));
-                                                } catch (error) {
-                                                    console.error('File upload failed', error);
-                                                    setError('Failed to upload image');
-                                                }
-                                            }}
+                                            onChange={handleProfilePictureUpload}
+                                            disabled={uploadingImage}
                                         />
                                         <label
                                             htmlFor="profile-upload"
-                                            className="absolute inset-0 m-1 rounded-xl flex flex-col items-center justify-center bg-black/60 cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity z-50 hover:backdrop-blur-sm"
+                                            className={`absolute inset-0 m-1 rounded-xl flex flex-col items-center justify-center cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity z-50 ${
+                                                uploadingImage 
+                                                    ? 'bg-black/80 opacity-100' 
+                                                    : 'bg-black/60 hover:backdrop-blur-sm'
+                                            }`}
                                         >
-                                            <Camera size={28} className="text-white drop-shadow-md mb-2" />
-                                            <span className="text-white text-xs font-medium tracking-wide">Change Photo</span>
+                                            {uploadingImage ? (
+                                                <>
+                                                    <div className="w-8 h-8 border-2 border-white border-t-transparent rounded-full animate-spin mb-2" />
+                                                    <span className="text-white text-xs font-medium">Uploading...</span>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <Camera size={28} className="text-white drop-shadow-md mb-2" />
+                                                    <span className="text-white text-xs font-medium tracking-wide">Change Photo</span>
+                                                </>
+                                            )}
                                         </label>
                                     </>
                                 )}
+                                {/* ============================================ */}
                             </div>
                         </div>
 
@@ -237,7 +269,6 @@ const Profile = () => {
             </div>
 
             {/* Messages */}
-
             {error && (
                 <div className="bg-red-500/10 border border-red-500/50 text-red-200 p-4 rounded-xl animate-fade-in">
                     {error}
@@ -368,9 +399,6 @@ const Profile = () => {
                 </div>
             </div>
         </div>
-
-
-
     );
 };
 

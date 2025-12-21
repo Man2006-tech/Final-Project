@@ -1,6 +1,7 @@
 import { useState, useRef } from 'react';
 import { X, Image, Send, Link as LinkIcon, Loader } from 'lucide-react';
-import { postAPI, userAPI } from '../../services/api';
+import { postAPI } from '../../services/api';
+import { uploadToCloudinary, validateImageFile, compressImage } from '../../utils/imageUpload';
 import Button from '../common/Button';
 
 const CreatePostModal = ({ isOpen, onClose, userId, onPostCreated }) => {
@@ -8,6 +9,7 @@ const CreatePostModal = ({ isOpen, onClose, userId, onPostCreated }) => {
     const [mediaUrl, setMediaUrl] = useState('');
     const [loading, setLoading] = useState(false);
     const [uploading, setUploading] = useState(false);
+    const [uploadProgress, setUploadProgress] = useState(0);
     const [error, setError] = useState('');
     const [showUrlInput, setShowUrlInput] = useState(false);
     const fileInputRef = useRef(null);
@@ -18,22 +20,41 @@ const CreatePostModal = ({ isOpen, onClose, userId, onPostCreated }) => {
         const file = e.target.files[0];
         if (!file) return;
 
+        // Validate file
+        const validation = validateImageFile(file, 5); // Max 5MB
+        if (!validation.valid) {
+            setError(validation.error);
+            setTimeout(() => setError(''), 3000);
+            return;
+        }
+
         setUploading(true);
         setError('');
-
-        const formData = new FormData();
-        formData.append('file', file);
+        setUploadProgress(0);
 
         try {
-            const response = await userAPI.uploadFile(formData);
-            // FileController returns full URL in fileDownloadUri
-            setMediaUrl(response.data.fileDownloadUri);
+            // Optional: Compress image before upload
+            const compressedFile = await compressImage(file, 1920, 0.85);
+            
+            // Simulate progress (Cloudinary doesn't provide real-time progress)
+            const progressInterval = setInterval(() => {
+                setUploadProgress(prev => Math.min(prev + 10, 90));
+            }, 200);
+
+            // Upload to Cloudinary
+            const imageUrl = await uploadToCloudinary(compressedFile);
+            
+            clearInterval(progressInterval);
+            setUploadProgress(100);
+            
+            setMediaUrl(imageUrl);
             setShowUrlInput(false);
         } catch (err) {
             console.error("Upload failed", err);
-            setError('Failed to upload image');
+            setError('Failed to upload image. Please try again.');
         } finally {
             setUploading(false);
+            setUploadProgress(0);
         }
     };
 
@@ -101,10 +122,26 @@ const CreatePostModal = ({ isOpen, onClose, userId, onPostCreated }) => {
                                 <div className="absolute inset-0 flex items-center justify-center flex-col text-blue-500">
                                     <Loader size={32} className="animate-spin mb-2" />
                                     <span className="text-sm font-medium">Uploading...</span>
+                                    {uploadProgress > 0 && (
+                                        <div className="w-48 h-2 bg-gray-200 rounded-full mt-3 overflow-hidden">
+                                            <div 
+                                                className="h-full bg-blue-500 transition-all duration-300"
+                                                style={{ width: `${uploadProgress}%` }}
+                                            />
+                                        </div>
+                                    )}
                                 </div>
                             ) : (
                                 <>
-                                    <img src={mediaUrl} alt="Preview" className="w-full h-full object-cover" onError={(e) => e.target.style.display = 'none'} />
+                                    <img 
+                                        src={mediaUrl} 
+                                        alt="Preview" 
+                                        className="w-full h-full object-cover" 
+                                        onError={(e) => {
+                                            e.target.style.display = 'none';
+                                            setError('Failed to load image');
+                                        }} 
+                                    />
                                     <button
                                         type="button"
                                         onClick={() => setMediaUrl('')}
@@ -126,11 +163,13 @@ const CreatePostModal = ({ isOpen, onClose, userId, onPostCreated }) => {
                                 className="hidden"
                                 accept="image/*"
                                 onChange={handleFileUpload}
+                                disabled={uploading}
                             />
                             <button
                                 type="button"
                                 onClick={() => fileInputRef.current?.click()}
-                                className="p-2.5 rounded-full text-blue-500 hover:bg-blue-50 transition-colors flex items-center space-x-2 group"
+                                disabled={uploading}
+                                className="p-2.5 rounded-full text-blue-500 hover:bg-blue-50 transition-colors flex items-center space-x-2 group disabled:opacity-50 disabled:cursor-not-allowed"
                                 title="Upload Image"
                             >
                                 <Image size={22} className="group-hover:scale-110 transition-transform" />
@@ -138,7 +177,8 @@ const CreatePostModal = ({ isOpen, onClose, userId, onPostCreated }) => {
                             <button
                                 type="button"
                                 onClick={() => setShowUrlInput(!showUrlInput)}
-                                className={`p-2.5 rounded-full transition-colors flex items-center space-x-2 group ${showUrlInput ? 'bg-purple-50 text-purple-600' : 'text-purple-500 hover:bg-purple-50'}`}
+                                disabled={uploading}
+                                className={`p-2.5 rounded-full transition-colors flex items-center space-x-2 group disabled:opacity-50 ${showUrlInput ? 'bg-purple-50 text-purple-600' : 'text-purple-500 hover:bg-purple-50'}`}
                                 title="Add Image URL"
                             >
                                 <LinkIcon size={22} className="group-hover:scale-110 transition-transform" />
@@ -157,7 +197,7 @@ const CreatePostModal = ({ isOpen, onClose, userId, onPostCreated }) => {
                     </div>
 
                     {/* URL Input Collapsible */}
-                    {showUrlInput && (
+                    {showUrlInput && !uploading && (
                         <div className="mt-3 animate-in slide-in-from-top-2 fade-in">
                             <div className="flex items-center space-x-2 bg-gray-50 rounded-xl px-3 py-2 border border-gray-200 focus-within:ring-2 ring-purple-500/20 transition-all">
                                 <LinkIcon size={16} className="text-gray-400" />
