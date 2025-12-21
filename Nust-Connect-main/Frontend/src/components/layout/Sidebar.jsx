@@ -14,6 +14,7 @@ import {
     Users,
     Shield,
     Camera,
+    Building, // ✅ ADDED for Venue Booking icon
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
@@ -32,6 +33,7 @@ const Sidebar = () => {
         { name: 'Lost & Found', icon: Search, path: '/lost-found', roles: ['ADMIN', 'FACULTY', 'STUDENT'] },
         { name: 'Jobs', icon: Briefcase, path: '/jobs', roles: ['ADMIN', 'FACULTY', 'STUDENT'] },
         { name: 'Clubs', icon: Users, path: '/clubs', roles: ['ADMIN', 'FACULTY', 'STUDENT'] },
+        { name: 'Venue Booking', icon: Building, path: '/venue-booking', roles: ['ADMIN', 'FACULTY', 'STUDENT'] }, // ✅ ADDED
         { name: 'Complaints', icon: MessageSquare, path: '/complaints', roles: ['ADMIN', 'FACULTY', 'STUDENT'] },
     ];
 

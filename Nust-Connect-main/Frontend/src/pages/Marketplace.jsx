@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import { uploadToCloudinary, uploadMultipleImages, validateImageFile } from '../utils/imageUpload';
-import { ShoppingBag, Tag, Plus, Search, Filter, Heart, MessageCircle, Loader2, X, Trash2 } from 'lucide-react';
+import { ShoppingBag, Tag, Plus, Search, Filter, Heart, MessageCircle, Loader2, X, Trash2, Image as ImageIcon } from 'lucide-react';
 import Card from '../components/common/Card';
 import Button from '../components/common/Button';
-import { marketplaceAPI, userAPI } from '../services/api';
+import { marketplaceAPI } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 
 const Marketplace = () => {
@@ -13,6 +13,7 @@ const Marketplace = () => {
     const [items, setItems] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
+    const [success, setSuccess] = useState(''); // ✅ FIXED: Added missing state
     const [showModal, setShowModal] = useState(false);
     const [submitting, setSubmitting] = useState(false);
     const [uploadingImage, setUploadingImage] = useState(false);
@@ -54,9 +55,16 @@ const Marketplace = () => {
     const fetchCategories = async () => {
         try {
             const response = await marketplaceAPI.getCategories();
-            setAvailableCategories(response.data);
+            setAvailableCategories(response.data || []);
+            
+            // ✅ FIXED: Set default category if available
+            if (response.data && response.data.length > 0 && !formData.categoryId) {
+                setFormData(prev => ({ ...prev, categoryId: response.data[0].id }));
+            }
         } catch (err) {
             console.error('Error fetching categories:', err);
+            setError('Failed to load categories');
+            setTimeout(() => setError(''), 3000);
         }
     };
 
@@ -65,8 +73,12 @@ const Marketplace = () => {
         try {
             await marketplaceAPI.deleteItem(itemId);
             fetchItems();
+            setSuccess('Item deleted successfully');
+            setTimeout(() => setSuccess(''), 3000);
         } catch (err) {
             console.error("Failed to delete item", err);
+            setError('Failed to delete item');
+            setTimeout(() => setError(''), 3000);
         }
     };
 
@@ -77,11 +89,20 @@ const Marketplace = () => {
             return;
         }
 
+        // ✅ FIXED: Validate category selection
+        if (!formData.categoryId) {
+            setError('Please select a category');
+            return;
+        }
+
         try {
             setSubmitting(true);
             setError('');
 
             await marketplaceAPI.createItem(user.userId, formData);
+
+            setSuccess('Item listed successfully!');
+            setTimeout(() => setSuccess(''), 3000);
 
             setFormData({
                 title: '',
@@ -90,7 +111,7 @@ const Marketplace = () => {
                 conditionStatus: 'USED',
                 location: '',
                 imageUrls: [],
-                categoryId: ''
+                categoryId: availableCategories.length > 0 ? availableCategories[0].id : ''
             });
             setShowModal(false);
             fetchItems();
@@ -111,41 +132,39 @@ const Marketplace = () => {
     };
 
     const handleImageUpload = async (e) => {
-    const files = Array.from(e.target.files);
-    if (files.length === 0) return;
+        const files = Array.from(e.target.files);
+        if (files.length === 0) return;
 
-    // Validate all files
-    for (const file of files) {
-        const validation = validateImageFile(file, 5);
-        if (!validation.valid) {
-            setError(validation.error);
-            setTimeout(() => setError(''), 3000);
-            return;
+        for (const file of files) {
+            const validation = validateImageFile(file, 5);
+            if (!validation.valid) {
+                setError(validation.error);
+                setTimeout(() => setError(''), 3000);
+                return;
+            }
         }
-    }
 
-    setUploadingImage(true);
-    setError('');
+        setUploadingImage(true);
+        setError('');
 
-    try {
-        // Upload multiple images to Cloudinary
-        const uploadedUrls = await uploadMultipleImages(files);
-        
-        setFormData({
-            ...formData,
-            imageUrls: [...formData.imageUrls, ...uploadedUrls]
-        });
+        try {
+            const uploadedUrls = await uploadMultipleImages(files);
+            
+            setFormData({
+                ...formData,
+                imageUrls: [...formData.imageUrls, ...uploadedUrls]
+            });
 
-        setSuccess(`${files.length} image(s) uploaded successfully!`);
-        setTimeout(() => setSuccess(''), 3000);
-    } catch (err) {
-        console.error('Failed to upload images:', err);
-        setError('Failed to upload images. Please try again.');
-        setTimeout(() => setError(''), 3000);
-    } finally {
-        setUploadingImage(false);
-    }
-};
+            setSuccess(`${files.length} image(s) uploaded successfully!`);
+            setTimeout(() => setSuccess(''), 3000);
+        } catch (err) {
+            console.error('Failed to upload images:', err);
+            setError('Failed to upload images. Please try again.');
+            setTimeout(() => setError(''), 3000);
+        } finally {
+            setUploadingImage(false);
+        }
+    };
 
     const removeImage = (indexToRemove) => {
         setFormData({
@@ -163,8 +182,6 @@ const Marketplace = () => {
             return newWishlist;
         });
     };
-
-    const isInWishlist = (itemId) => wishlist.includes(itemId);
 
     const filteredItems = items.filter(item => {
         const matchesCategory = category === 'all' || item.categoryName?.toLowerCase() === category.toLowerCase();
@@ -220,6 +237,11 @@ const Marketplace = () => {
             {error && (
                 <Card className="bg-red-50 border-red-200">
                     <p className="text-red-800 text-center">{error}</p>
+                </Card>
+            )}
+            {success && (
+                <Card className="bg-green-50 border-green-200">
+                    <p className="text-green-800 text-center">{success}</p>
                 </Card>
             )}
 
@@ -481,6 +503,9 @@ const Marketplace = () => {
                                             <option key={cat.id} value={cat.id}>{cat.name}</option>
                                         ))}
                                     </select>
+                                    {availableCategories.length === 0 && (
+                                        <p className="text-xs text-red-500 mt-1">No categories available</p>
+                                    )}
                                 </div>
                             </div>
 
@@ -523,10 +548,13 @@ const Marketplace = () => {
                                     multiple
                                     onChange={handleImageUpload}
                                     disabled={uploadingImage}
-                                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all text-gray-700"
+                                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all text-gray-700 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-green-50 file:text-green-700 hover:file:bg-green-100"
                                 />
                                 {uploadingImage && (
-                                    <p className="text-sm text-green-600 mt-2">Uploading images...</p>
+                                    <div className="mt-2 flex items-center text-green-600">
+                                        <Loader2 size={16} className="animate-spin mr-2" />
+                                        <span className="text-sm">Uploading images...</span>
+                                    </div>
                                 )}
                                 {formData.imageUrls.length > 0 && (
                                     <div className="mt-3 grid grid-cols-3 gap-2">
@@ -562,7 +590,7 @@ const Marketplace = () => {
                                 <Button
                                     type="submit"
                                     loading={submitting}
-                                    disabled={submitting}
+                                    disabled={submitting || uploadingImage}
                                     className="flex-1 bg-green-600 hover:bg-green-700 text-white"
                                 >
                                     {submitting ? 'Listing...' : 'List Item'}
