@@ -68,9 +68,27 @@ const Profile = () => {
     };
 
     const handleChange = (e) => {
+        const { name, value } = e.target;
+
+        // Validate phone number - only digits, spaces, hyphens, and plus sign
+        if (name === 'phone') {
+            const phoneRegex = /^[0-9\s\-+]*$/;
+            if (!phoneRegex.test(value)) {
+                return; // Don't update if invalid characters
+            }
+        }
+
+        // Validate semester - only numbers
+        if (name === 'semester') {
+            const semesterRegex = /^[0-9]*$/;
+            if (!semesterRegex.test(value)) {
+                return; // Don't update if invalid characters
+            }
+        }
+
         setFormData({
             ...formData,
-            [e.target.name]: e.target.value
+            [name]: value
         });
     };
 
@@ -194,7 +212,7 @@ const Profile = () => {
                                 {profile?.role}
                             </span>
                         </div>
-                        <p className="text-blue-100 font-medium drop-shadow-sm">{profile?.email}</p>
+                        <p className="text-blue-50 font-medium drop-shadow-sm">{profile?.email}</p>
                     </div>
                 </div>
             </div>
@@ -240,7 +258,7 @@ const Profile = () => {
                         </h2>
                         <div className="space-y-4">
                             <div className="group">
-                                <label className="text-xs font-medium text-slate-500 uppercase tracking-wider block mb-1">Phone</label>
+                                <label className="text-xs font-medium text-slate-700 uppercase tracking-wider block mb-1">Phone</label>
                                 {isEditing ? (
                                     <input
                                         type="text"
@@ -255,7 +273,7 @@ const Profile = () => {
                             </div>
 
                             <div className="group">
-                                <label className="text-xs font-medium text-slate-500 uppercase tracking-wider block mb-1">Address</label>
+                                <label className="text-xs font-medium text-slate-700 uppercase tracking-wider block mb-1">Address</label>
                                 {isEditing ? (
                                     <input
                                         type="text"
@@ -277,7 +295,7 @@ const Profile = () => {
                         </h2>
                         <div className="space-y-4">
                             <div>
-                                <label className="text-xs font-medium text-slate-500 uppercase tracking-wider block mb-1">CMS ID</label>
+                                <label className="text-xs font-medium text-slate-700 uppercase tracking-wider block mb-1">CMS ID</label>
                                 {isEditing ? (
                                     <input
                                         type="text"
@@ -291,7 +309,7 @@ const Profile = () => {
                                 )}
                             </div>
                             <div>
-                                <label className="text-xs font-medium text-slate-500 uppercase tracking-wider block mb-1">Department</label>
+                                <label className="text-xs font-medium text-slate-700 uppercase tracking-wider block mb-1">Department</label>
                                 {isEditing ? (
                                     <input
                                         type="text"
@@ -305,7 +323,7 @@ const Profile = () => {
                                 )}
                             </div>
                             <div className="group">
-                                <label className="text-xs font-medium text-slate-500 uppercase tracking-wider block mb-1">Semester</label>
+                                <label className="text-xs font-medium text-slate-700 uppercase tracking-wider block mb-1">Semester</label>
                                 {isEditing ? (
                                     <input
                                         type="text"

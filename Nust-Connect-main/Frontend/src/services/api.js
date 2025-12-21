@@ -123,12 +123,12 @@ export const rideAPI = {
 
 // Lost & Found APIs
 export const lostFoundAPI = {
-    getLostItems: () => api.get('/lost-found/lost'),
-    getFoundItems: () => api.get('/lost-found/found'),
+    getLostItems: () => api.get('/lostandfound/lost'),
+    getFoundItems: () => api.get('/lostandfound/found'),
     reportLostItem: (userId, itemData) =>
-        api.post(`/lost-found/lost?userId=${userId}`, itemData),
+        api.post(`/lostandfound/lost?userId=${userId}`, itemData),
     reportFoundItem: (userId, itemData) =>
-        api.post(`/lost-found/found?userId=${userId}`, itemData),
+        api.post(`/lostandfound/found?userId=${userId}`, itemData),
 };
 
 // Notification APIs
@@ -161,6 +161,50 @@ export const clubAPI = {
         api.post(`/clubs/${clubId}/join?userId=${userId}`),
     leaveClub: (clubId, userId) =>
         api.delete(`/clubs/${clubId}/leave?userId=${userId}`),
+};
+
+// Feedback APIs
+export const feedbackAPI = {
+    getAllFeedback: () => api.get('/feedback'),
+    getUserFeedback: (userId) => api.get(`/feedback/user/${userId}`),
+    createFeedback: (userId, feedbackData) => api.post(`/feedback?userId=${userId}`, feedbackData),
+    resolveFeedback: (feedbackId) => api.patch(`/feedback/${feedbackId}/resolve`),
+    cancelFeedback: (feedbackId, userId) => api.patch(`/feedback/${feedbackId}/cancel?userId=${userId}`)
+};
+
+// Job Posting APIs
+export const jobAPI = {
+    getAllJobs: () => api.get('/jobs'),
+    getJob: (jobId) => api.get(`/jobs/${jobId}`),
+    searchJobs: (keyword) => api.get(`/jobs/search?keyword=${keyword}`),
+    createJob: (posterId, jobData) => api.post(`/jobs?posterId=${posterId}`, jobData),
+    closeJob: (jobId) => api.patch(`/jobs/${jobId}/close`),
+    deleteJob: (jobId) => api.delete(`/jobs/${jobId}`)
+};
+
+// Venue APIs
+export const venueAPI = {
+    getAllVenues: () => api.get('/venues'),
+    getVenue: (venueId) => api.get(`/venues/${venueId}`),
+    getAvailableVenues: () => api.get('/venues/available'),
+    getVenuesByCapacity: (minCapacity) => api.get(`/venues/capacity/${minCapacity}`),
+    getVenuesWithProjector: () => api.get('/venues/amenities/projector'),
+    getVenuesWithAudio: () => api.get('/venues/amenities/audio'),
+    getVenuesWithWhiteboard: () => api.get('/venues/amenities/whiteboard'),
+    getVenuesWithAllAmenities: () => api.get('/venues/amenities/all'),
+};
+
+// Venue Booking APIs
+export const venueBookingAPI = {
+    createBooking: (userId, venueId, eventId, bookingData) =>
+        api.post(`/venue-bookings?userId=${userId}&venueId=${venueId}&eventId=${eventId}`, bookingData),
+    getBooking: (bookingId) => api.get(`/venue-bookings/${bookingId}`),
+    getUserBookings: (userId) => api.get(`/venue-bookings/user/${userId}`),
+    getVenueBookings: (venueId) => api.get(`/venue-bookings/venue/${venueId}`),
+    getUpcomingBookings: (venueId) => api.get(`/venue-bookings/venue/${venueId}/upcoming`),
+    updateBooking: (bookingId, bookingData) =>
+        api.put(`/venue-bookings/${bookingId}`, bookingData),
+    cancelBooking: (bookingId) => api.delete(`/venue-bookings/${bookingId}/cancel`),
 };
 
 export default api;

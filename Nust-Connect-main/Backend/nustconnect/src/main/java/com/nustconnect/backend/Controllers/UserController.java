@@ -148,13 +148,15 @@ public class UserController {
         String profilePicture = "";
         String address = "";
         String semester = "";
-        
+        String bio = "";
+
         try {
             Profile profile = profileService.getProfileByUserId(user.getUserId());
             if (profile != null) {
                 profilePicture = profile.getProfilePicture();
                 address = profile.getAddress();
                 semester = profile.getSemester();
+                bio = profile.getBio();
             }
         } catch (Exception e) {
             // Ignore if profile doesn't exist
@@ -176,6 +178,7 @@ public class UserController {
                 .profilePicture(profilePicture)
                 .address(address)
                 .semester(semester)
+                .bio(bio)
                 .build();
     }
 

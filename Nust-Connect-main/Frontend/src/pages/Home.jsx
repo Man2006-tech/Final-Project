@@ -13,16 +13,42 @@ import {
 import { useAuth } from '../context/AuthContext';
 import { getRecent, addToRecent, getTimeSince } from '../utils/recentlyAccessed';
 import Card from '../components/common/Card';
+import { rideAPI, eventAPI, marketplaceAPI } from '../services/api';
 
 const Home = () => {
     const { user } = useAuth();
     const navigate = useNavigate();
     const [recentModules, setRecentModules] = useState([]);
+    const [stats, setStats] = useState({
+        rides: 0,
+        events: 0,
+        marketplace: 0
+    });
 
     useEffect(() => {
         // Load recently accessed modules
         setRecentModules(getRecent());
+        // Fetch real stats
+        fetchStats();
     }, []);
+
+    const fetchStats = async () => {
+        try {
+            const [ridesRes, eventsRes, marketplaceRes] = await Promise.all([
+                rideAPI.getAllRides().catch(() => ({ data: [] })),
+                eventAPI.getAllEvents(0, 100).catch(() => ({ data: { content: [] } })),
+                marketplaceAPI.getAllItems(0, 100).catch(() => ({ data: { content: [] } }))
+            ]);
+
+            setStats({
+                rides: Array.isArray(ridesRes.data) ? ridesRes.data.length : ridesRes.data.content?.length || 0,
+                events: Array.isArray(eventsRes.data) ? eventsRes.data.length : eventsRes.data.content?.length || 0,
+                marketplace: Array.isArray(marketplaceRes.data) ? marketplaceRes.data.length : marketplaceRes.data.content?.length || 0
+            });
+        } catch (err) {
+            console.error('Failed to fetch stats:', err);
+        }
+    };
 
     const allModules = [
         {
@@ -105,10 +131,10 @@ const Home = () => {
                         <h1 className="text-3xl md:text-4xl font-bold text-white mb-2">
                             {greeting}, <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary-300 to-secondary-300">{user?.name || 'User'}</span>!
                         </h1>
-                        <p className="text-blue-100 text-lg opacity-90">Welcome to your NUST Connect dashboard.</p>
+                        <p className="text-blue-50 text-lg opacity-90">Welcome to your NUST Connect dashboard.</p>
                     </div>
                     <div className="hidden md:block text-right bg-white/5 backdrop-blur-sm p-4 rounded-xl border border-white/10">
-                        <p className="text-sm text-blue-100 font-medium">
+                        <p className="text-sm text-blue-50 font-medium">
                             {new Date().toLocaleDateString('en-US', {
                                 weekday: 'long',
                                 year: 'numeric',
@@ -135,7 +161,7 @@ const Home = () => {
                             <span className="text-xs font-semibold text-green-600 bg-green-100 px-2 py-1 rounded-full">Active</span>
                         </div>
                         <p className="text-sm text-gray-500 font-medium">Active Rides</p>
-                        <p className="text-3xl font-bold text-gray-900 mt-1">12</p>
+                        <p className="text-3xl font-bold text-gray-900 mt-1">{stats.rides}</p>
                     </div>
                 </Card>
 
@@ -149,7 +175,7 @@ const Home = () => {
                             <span className="text-xs font-semibold text-purple-600 bg-purple-100 px-2 py-1 rounded-full">Upcoming</span>
                         </div>
                         <p className="text-sm text-gray-500 font-medium">Events</p>
-                        <p className="text-3xl font-bold text-gray-900 mt-1">8</p>
+                        <p className="text-3xl font-bold text-gray-900 mt-1">{stats.events}</p>
                     </div>
                 </Card>
 
@@ -163,7 +189,7 @@ const Home = () => {
                             <span className="text-xs font-semibold text-blue-600 bg-blue-100 px-2 py-1 rounded-full">New</span>
                         </div>
                         <p className="text-sm text-gray-500 font-medium">Marketplace</p>
-                        <p className="text-3xl font-bold text-gray-900 mt-1">25</p>
+                        <p className="text-3xl font-bold text-gray-900 mt-1">{stats.marketplace}</p>
                     </div>
                 </Card>
             </div>

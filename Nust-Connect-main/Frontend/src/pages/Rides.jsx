@@ -14,7 +14,9 @@ const Rides = () => {
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [activeTab, setActiveTab] = useState('available'); // available, myRides
     const [creating, setCreating] = useState(false);
+    const [requesting, setRequesting] = useState(null);
     const [error, setError] = useState('');
+    const [successMessage, setSuccessMessage] = useState('');
 
     // Form State
     const [formData, setFormData] = useState({
@@ -96,9 +98,41 @@ const Rides = () => {
         if (!window.confirm("Are you sure you want to cancel this ride?")) return;
         try {
             await rideAPI.cancelRide(rideId);
+            setSuccessMessage('Ride cancelled successfully');
+            setTimeout(() => setSuccessMessage(''), 3000);
             fetchRides();
         } catch (err) {
-            alert("Failed to cancel ride");
+            console.error("Failed to cancel ride", err);
+            setError(err.response?.data?.message || "Failed to cancel ride");
+            setTimeout(() => setError(''), 3000);
+        }
+    };
+
+    const handleRequestRide = async (rideId) => {
+        if (!user) {
+            setError('You must be logged in to request a ride');
+            setTimeout(() => setError(''), 3000);
+            return;
+        }
+
+        setRequesting(rideId);
+        setError('');
+        setSuccessMessage('');
+
+        try {
+            await rideAPI.requestRide(rideId, user.userId);
+            setSuccessMessage('Ride request sent successfully! The driver will be notified.');
+            setTimeout(() => setSuccessMessage(''), 5000);
+            fetchRides();
+        } catch (err) {
+            console.error("Failed to request ride", err);
+            const errorMsg = err.response?.data?.message ||
+                           err.response?.data?.error ||
+                           "Failed to request ride";
+            setError(errorMsg);
+            setTimeout(() => setError(''), 5000);
+        } finally {
+            setRequesting(null);
         }
     };
 
@@ -109,6 +143,21 @@ const Rides = () => {
 
     return (
         <div className="space-y-6 animate-fade-in relative">
+            {/* Success Message */}
+            {successMessage && (
+                <div className="fixed top-4 right-4 z-50 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg animate-in slide-in-from-top">
+                    {successMessage}
+                </div>
+            )}
+
+            {/* Error Message */}
+            {error && (
+                <div className="fixed top-4 right-4 z-50 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg animate-in slide-in-from-top flex items-center">
+                    <AlertTriangle size={18} className="mr-2" />
+                    {error}
+                </div>
+            )}
+
             {/* Header Section */}
             <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-800 p-8 shadow-2xl">
                 <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl transform translate-x-1/3 -translate-y-1/3" />
@@ -122,7 +171,7 @@ const Rides = () => {
                             </div>
                             <h1 className="text-3xl md:text-4xl font-bold text-white">Ride Sharing</h1>
                         </div>
-                        <p className="text-blue-100 text-lg">Share rides, save money, make friends</p>
+                        <p className="text-blue-50 text-lg">Share rides, save money, make friends</p>
                     </div>
 
                     {/* FIXED: Green Offer Ride Button */}
@@ -282,8 +331,14 @@ const Rides = () => {
                                                         </Button>
                                                     )
                                                 ) : (
-                                                    <Button size="sm" className="bg-blue-600 hover:bg-blue-700 text-white">
-                                                        Request
+                                                    <Button
+                                                        size="sm"
+                                                        className="bg-blue-600 hover:bg-blue-700 text-white"
+                                                        onClick={() => handleRequestRide(ride.rideId)}
+                                                        loading={requesting === ride.rideId}
+                                                        disabled={requesting === ride.rideId}
+                                                    >
+                                                        {requesting === ride.rideId ? 'Requesting...' : 'Request'}
                                                     </Button>
                                                 )}
                                             </div>
@@ -346,6 +401,7 @@ const Rides = () => {
                                     <input
                                         required
                                         type="datetime-local"
+                                        min={new Date().toISOString().slice(0, 16)}
                                         className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
                                         value={formData.departureTime}
                                         onChange={(e) => setFormData({ ...formData, departureTime: e.target.value })}

@@ -66,6 +66,14 @@ public class FeedbackController {
         return ResponseEntity.ok(mapToResponseDTO(feedback));
     }
 
+    @PatchMapping("/{feedbackId}/cancel")
+    public ResponseEntity<FeedbackResponseDTO> cancelFeedback(
+            @PathVariable Long feedbackId,
+            @RequestParam Long userId) {
+        Feedback feedback = feedbackService.cancelFeedback(feedbackId, userId);
+        return ResponseEntity.ok(mapToResponseDTO(feedback));
+    }
+
     private FeedbackResponseDTO mapToResponseDTO(Feedback feedback) {
         return FeedbackResponseDTO.builder()
                 .feedbackId(feedback.getFeedbackId())

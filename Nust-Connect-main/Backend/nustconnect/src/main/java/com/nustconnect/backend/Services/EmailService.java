@@ -37,7 +37,7 @@ public class EmailService {
     // ==================== VERIFICATION EMAIL ====================
     public void sendVerificationEmail(String to, String name, String verificationToken) {
         String subject = "NUST Connect - Email Verification";
-        String verificationLink = "http://localhost:8080/api/auth/verify-email?token=" + verificationToken;
+        String verificationLink = "http://localhost:8081/api/auth/verify-email?token=" + verificationToken;
 
         String body = String.format(
                 "Hi %s,\n\n" +
@@ -57,7 +57,7 @@ public class EmailService {
     // ==================== PASSWORD RESET EMAIL ====================
     public void sendPasswordResetEmail(String to, String name, String resetToken) {
         String subject = "NUST Connect - Password Reset Request";
-        String resetLink = "http://localhost:3000/reset-password?token=" + resetToken;
+        String resetLink = "http://localhost:5174/reset-password?token=" + resetToken;
 
         String body = String.format(
                 "Hi %s,\n\n" +
@@ -88,7 +88,7 @@ public class EmailService {
                         "- Buy and sell items on the marketplace\n" +
                         "- Share rides\n" +
                         "- And much more!\n\n" +
-                        "Get started at: http://localhost:3000\n\n" +
+                        "Get started at: http://localhost:5174\n\n" +
                         "Best regards,\n" +
                         "NUST Connect Team",
                 name

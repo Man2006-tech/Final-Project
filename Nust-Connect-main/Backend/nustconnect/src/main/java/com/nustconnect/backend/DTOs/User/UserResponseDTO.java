@@ -26,4 +26,5 @@ public class UserResponseDTO {
     private String address;
     private String semester;
     private String profilePicture;
+    private String bio;
 }

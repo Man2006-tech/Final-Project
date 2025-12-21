@@ -278,7 +278,7 @@ const Events = () => {
                             </div>
                             <h1 className="text-3xl md:text-4xl font-bold text-white">Campus Events</h1>
                         </div>
-                        <p className="text-purple-100 text-lg">Discover, register, and never miss an event</p>
+                        <p className="text-purple-50 text-lg">Discover, register, and never miss an event</p>
                     </div>
 
                     {/* Admin Only Create Button */}

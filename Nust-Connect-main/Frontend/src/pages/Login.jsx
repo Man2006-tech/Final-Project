@@ -123,7 +123,7 @@ const Login = () => {
                 onChange={handleChange}
                 placeholder="your.email@nust.edu.pk"
                 required
-                className="w-full px-5 py-3.5 bg-slate-900/50 border border-slate-700 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 transition-all duration-300 hover:bg-slate-900/70"
+                className="w-full px-5 py-3.5 bg-slate-900/50 border border-slate-700 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 transition-all duration-300 hover:bg-slate-900/70"
               />
             </div>
 
@@ -140,7 +140,7 @@ const Login = () => {
                   onChange={handleChange}
                   placeholder="Enter your password"
                   required
-                  className="w-full px-5 py-3.5 bg-slate-900/50 border border-slate-700 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 transition-all duration-300 hover:bg-slate-900/70"
+                  className="w-full px-5 py-3.5 bg-slate-900/50 border border-slate-700 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 transition-all duration-300 hover:bg-slate-900/70"
                 />
                 <button
                   type="button"
@@ -183,9 +183,9 @@ const Login = () => {
                 />
                 Remember me
               </label>
-              <a href="#" className="text-primary-400 hover:text-primary-300 font-medium transition-colors">
+              <Link to="/forgot-password" className="text-primary-400 hover:text-primary-300 font-medium transition-colors cursor-pointer underline">
                 Forgot password?
-              </a>
+              </Link>
             </div>
 
             {/* Submit Button */}

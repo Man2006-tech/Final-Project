@@ -127,7 +127,7 @@ const Register = () => {
                                     onChange={handleChange}
                                     placeholder="John Doe"
                                     required
-                                    className="w-full pl-11 pr-4 py-3.5 bg-slate-900/50 border border-slate-700 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-secondary-500/50 focus:border-secondary-500 transition-all duration-300 hover:bg-slate-900/70"
+                                    className="w-full pl-11 pr-4 py-3.5 bg-slate-900/50 border border-slate-700 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-secondary-500/50 focus:border-secondary-500 transition-all duration-300 hover:bg-slate-900/70"
                                 />
                             </div>
                         </div>
@@ -148,7 +148,7 @@ const Register = () => {
                                     onChange={handleChange}
                                     placeholder="student@nust.edu.pk"
                                     required
-                                    className="w-full pl-11 pr-4 py-3.5 bg-slate-900/50 border border-slate-700 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-secondary-500/50 focus:border-secondary-500 transition-all duration-300 hover:bg-slate-900/70"
+                                    className="w-full pl-11 pr-4 py-3.5 bg-slate-900/50 border border-slate-700 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-secondary-500/50 focus:border-secondary-500 transition-all duration-300 hover:bg-slate-900/70"
                                 />
                             </div>
                         </div>
@@ -169,7 +169,7 @@ const Register = () => {
                                     onChange={handleChange}
                                     placeholder="Create a password"
                                     required
-                                    className="w-full pl-11 pr-11 py-3.5 bg-slate-900/50 border border-slate-700 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-secondary-500/50 focus:border-secondary-500 transition-all duration-300 hover:bg-slate-900/70"
+                                    className="w-full pl-11 pr-11 py-3.5 bg-slate-900/50 border border-slate-700 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-secondary-500/50 focus:border-secondary-500 transition-all duration-300 hover:bg-slate-900/70"
                                 />
                                 <button
                                     type="button"
@@ -197,7 +197,7 @@ const Register = () => {
                                     onChange={handleChange}
                                     placeholder="Confirm your password"
                                     required
-                                    className="w-full pl-11 pr-4 py-3.5 bg-slate-900/50 border border-slate-700 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-secondary-500/50 focus:border-secondary-500 transition-all duration-300 hover:bg-slate-900/70"
+                                    className="w-full pl-11 pr-4 py-3.5 bg-slate-900/50 border border-slate-700 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-secondary-500/50 focus:border-secondary-500 transition-all duration-300 hover:bg-slate-900/70"
                                 />
                             </div>
                         </div>
@@ -236,9 +236,9 @@ const Register = () => {
                     </form>
 
                     {/* Login Link */}
-                    <p className="mt-6 text-center text-slate-400 text-sm">
+                    <p className="mt-6 text-center text-slate-400 text-sm relative z-10">
                         Already have an account?{' '}
-                        <Link to="/login" className="text-white hover:text-secondary-300 font-semibold transition-colors ml-1">
+                        <Link to="/login" className="text-white hover:text-secondary-300 font-semibold transition-colors ml-1 cursor-pointer underline">
                             Sign In
                         </Link>
                     </p>

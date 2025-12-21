@@ -129,6 +129,21 @@ public class FeedbackService {
         return feedbackRepository.save(feedback);
     }
 
+    public Feedback cancelFeedback(Long feedbackId, Long userId) {
+        Feedback feedback = getFeedbackById(feedbackId);
+
+        // Validate the user owns the feedback
+        if (!feedback.getSubmittedBy().getUserId().equals(userId)) {
+            throw new IllegalArgumentException("You can only cancel your own feedback");
+        }
+
+        // Call feedback.cancel()
+        feedback.cancel();
+
+        // Save and return the feedback
+        return feedbackRepository.save(feedback);
+    }
+
     // ==================== DELETE ====================
     public void deleteFeedback(Long feedbackId) {
         Feedback feedback = getFeedbackById(feedbackId);

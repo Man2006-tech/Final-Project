@@ -71,6 +71,10 @@ public class Feedback extends BaseEntity {
         this.status = "IN_PROGRESS";
     }
 
+    public void cancel() {
+        this.status = "CLOSED";
+    }
+
     // Manual getters and setters to resolve Lombok issues
     public Long getFeedbackId() {
         return feedbackId;

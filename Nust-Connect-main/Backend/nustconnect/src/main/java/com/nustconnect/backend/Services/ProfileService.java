@@ -80,6 +80,12 @@ public class ProfileService {
         if (updatedProfile.getInterests() != null) {
             existingProfile.setInterests(updatedProfile.getInterests());
         }
+        if (updatedProfile.getAddress() != null) {
+            existingProfile.setAddress(updatedProfile.getAddress());
+        }
+        if (updatedProfile.getSemester() != null) {
+            existingProfile.setSemester(updatedProfile.getSemester());
+        }
 
         return profileRepository.save(existingProfile);
     }

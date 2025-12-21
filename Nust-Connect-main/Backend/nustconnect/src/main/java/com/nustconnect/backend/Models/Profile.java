@@ -62,6 +62,7 @@ public class Profile {
     @Column(name = "address")
     private String address;
 
+    @Pattern(regexp = "^[0-9]*$", message = "Semester must contain only numbers")
     @Size(max = 50)
     @Column(name = "semester")
     private String semester;

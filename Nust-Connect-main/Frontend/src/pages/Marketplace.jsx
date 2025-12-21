@@ -1,88 +1,149 @@
-import { useState } from 'react';
-import { ShoppingBag, Tag, Plus, Search, Filter, Heart, MessageCircle } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { ShoppingBag, Tag, Plus, Search, Filter, Heart, MessageCircle, Loader2, X } from 'lucide-react';
 import Card from '../components/common/Card';
 import Button from '../components/common/Button';
+import { marketplaceAPI } from '../services/api';
+import { useAuth } from '../context/AuthContext';
 
 const Marketplace = () => {
+    const { user } = useAuth();
     const [category, setCategory] = useState('all');
     const [searchQuery, setSearchQuery] = useState('');
+    const [items, setItems] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState('');
+    const [showModal, setShowModal] = useState(false);
+    const [submitting, setSubmitting] = useState(false);
+    const [uploadingImage, setUploadingImage] = useState(false);
+    const [wishlist, setWishlist] = useState(() => {
+        const saved = localStorage.getItem('marketplace_wishlist');
+        return saved ? JSON.parse(saved) : [];
+    });
+    const [formData, setFormData] = useState({
+        title: '',
+        description: '',
+        price: '',
+        conditionStatus: 'USED',
+        location: '',
+        imageUrls: []
+    });
 
     const categories = ['All', 'Electronics', 'Books', 'Accessories', 'Furniture', 'Other'];
 
-    const placeholderItems = [
-        {
-            id: 1,
-            title: 'Scientific Calculator',
-            price: 1500,
-            condition: 'Like New',
-            seller: 'Ali Ahmed',
-            category: 'Electronics',
-            image: 'electronics',
-            posted: '2 days ago',
-            views: 45,
-            likes: 12,
-        },
-        {
-            id: 2,
-            title: 'Engineering Textbooks Set',
-            price: 2000,
-            condition: 'Good',
-            seller: 'Sara Khan',
-            category: 'Books',
-            image: 'books',
-            posted: '1 day ago',
-            views: 68,
-            likes: 23,
-        },
-        {
-            id: 3,
-            title: 'Laptop Stand - Adjustable',
-            price: 800,
-            condition: 'New',
-            seller: 'Hassan Ali',
-            category: 'Accessories',
-            image: 'accessories',
-            posted: '3 hours ago',
-            views: 24,
-            likes: 8,
-        },
-        {
-            id: 4,
-            title: 'Study Table with Chair',
-            price: 5000,
-            condition: 'Good',
-            seller: 'Fatima Malik',
-            category: 'Furniture',
-            image: 'furniture',
-            posted: '1 week ago',
-            views: 92,
-            likes: 34,
-        },
-        {
-            id: 5,
-            title: 'Wireless Mouse & Keyboard',
-            price: 1200,
-            condition: 'Like New',
-            seller: 'Usman Tariq',
-            category: 'Electronics',
-            image: 'electronics',
-            posted: '5 days ago',
-            views: 56,
-            likes: 19,
-        },
-        {
-            id: 6,
-            title: 'Backpack - Premium Quality',
-            price: 1800,
-            condition: 'New',
-            seller: 'Ayesha Iqbal',
-            category: 'Accessories',
-            image: 'accessories',
-            posted: '2 days ago',
-            views: 38,
-            likes: 15,
-        },
-    ];
+    useEffect(() => {
+        fetchItems();
+    }, []);
+
+    const fetchItems = async () => {
+        try {
+            setLoading(true);
+            setError('');
+            const response = await marketplaceAPI.getAllItems(0, 100);
+            setItems(response.data.content || response.data || []);
+        } catch (err) {
+            console.error('Error fetching marketplace items:', err);
+            setError('Failed to load marketplace items');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        if (!user?.userId) {
+            setError('You must be logged in to sell an item');
+            return;
+        }
+
+        try {
+            setSubmitting(true);
+            setError('');
+
+            await marketplaceAPI.createItem(user.userId, formData);
+
+            // Reset form and close modal
+            setFormData({
+                title: '',
+                description: '',
+                price: '',
+                conditionStatus: 'USED',
+                location: '',
+                imageUrls: []
+            });
+            setShowModal(false);
+
+            // Refresh items list
+            fetchItems();
+        } catch (err) {
+            console.error('Failed to create item:', err);
+            setError(err.response?.data?.message || 'Failed to list item. Please try again.');
+        } finally {
+            setSubmitting(false);
+        }
+    };
+
+    const handleChange = (e) => {
+        const { name, value } = e.target;
+        setFormData({
+            ...formData,
+            [name]: name === 'price' ? (value === '' ? '' : parseFloat(value) || 0) : value
+        });
+    };
+
+    const handleImageUpload = async (e) => {
+        const files = Array.from(e.target.files);
+        if (files.length === 0) return;
+
+        setUploadingImage(true);
+        setError('');
+
+        try {
+            const uploadedUrls = [];
+            for (const file of files) {
+                const formDataImg = new FormData();
+                formDataImg.append('file', file);
+
+                const response = await userAPI.uploadFile(formDataImg);
+                uploadedUrls.push(response.data.fileDownloadUri);
+            }
+
+            setFormData({
+                ...formData,
+                imageUrls: [...formData.imageUrls, ...uploadedUrls]
+            });
+        } catch (err) {
+            console.error('Failed to upload images:', err);
+            setError('Failed to upload images. Please try again.');
+        } finally {
+            setUploadingImage(false);
+        }
+    };
+
+    const removeImage = (indexToRemove) => {
+        setFormData({
+            ...formData,
+            imageUrls: formData.imageUrls.filter((_, index) => index !== indexToRemove)
+        });
+    };
+
+    const toggleWishlist = (itemId) => {
+        setWishlist(prev => {
+            const newWishlist = prev.includes(itemId)
+                ? prev.filter(id => id !== itemId)
+                : [...prev, itemId];
+            localStorage.setItem('marketplace_wishlist', JSON.stringify(newWishlist));
+            return newWishlist;
+        });
+    };
+
+    const isInWishlist = (itemId) => wishlist.includes(itemId);
+
+    const filteredItems = items.filter(item => {
+        const matchesCategory = category === 'all' || item.categoryName?.toLowerCase() === category.toLowerCase();
+        const matchesSearch = item.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                            item.description?.toLowerCase().includes(searchQuery.toLowerCase());
+        return matchesCategory && matchesSearch;
+    });
 
     const getImageGradient = (image) => {
         const gradients = {
@@ -96,10 +157,8 @@ const Marketplace = () => {
 
     const getConditionBadge = (condition) => {
         const badges = {
-            'New': 'bg-green-100 text-green-800',
-            'Like New': 'bg-blue-100 text-blue-800',
-            'Good': 'bg-yellow-100 text-yellow-800',
-            'Fair': 'bg-orange-100 text-orange-800',
+            'NEW': 'bg-green-100 text-green-800',
+            'USED': 'bg-blue-100 text-blue-800',
         };
         return badges[condition] || 'bg-gray-100 text-gray-800';
     };
@@ -110,7 +169,7 @@ const Marketplace = () => {
             <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-green-600 via-emerald-600 to-teal-700 p-8 shadow-2xl">
                 <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl transform translate-x-1/3 -translate-y-1/3" />
                 <div className="absolute bottom-0 left-0 w-48 h-48 bg-green-400/20 rounded-full blur-2xl transform -translate-x-1/3 translate-y-1/3" />
-                
+
                 <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between space-y-4 md:space-y-0">
                     <div>
                         <div className="flex items-center space-x-3 mb-3">
@@ -119,14 +178,24 @@ const Marketplace = () => {
                             </div>
                             <h1 className="text-3xl md:text-4xl font-bold text-white">Marketplace</h1>
                         </div>
-                        <p className="text-green-100 text-lg">Buy, sell, and discover amazing deals</p>
+                        <p className="text-green-50 text-lg">Buy, sell, and discover amazing deals</p>
                     </div>
-                    <Button className="bg-white text-green-600 hover:bg-green-50 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-300">
+                    <Button
+                        onClick={() => setShowModal(true)}
+                        className="bg-white text-green-600 hover:bg-green-50 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-300"
+                    >
                         <Plus size={20} className="mr-2" />
                         Sell Item
                     </Button>
                 </div>
             </div>
+
+            {/* Error Message */}
+            {error && (
+                <Card className="bg-red-50 border-red-200">
+                    <p className="text-red-800 text-center">{error}</p>
+                </Card>
+            )}
 
             {/* Search and Filter */}
             <div className="flex flex-col md:flex-row gap-4">
@@ -163,28 +232,62 @@ const Marketplace = () => {
                 ))}
             </div>
 
+            {/* Loading State */}
+            {loading && (
+                <div className="flex justify-center items-center py-20">
+                    <Loader2 className="animate-spin text-green-600" size={48} />
+                </div>
+            )}
+
+            {/* Empty State */}
+            {!loading && !error && filteredItems.length === 0 && (
+                <Card className="text-center py-12">
+                    <ShoppingBag size={48} className="text-gray-400 mx-auto mb-4" />
+                    <h3 className="text-xl font-semibold text-gray-700 mb-2">No items found</h3>
+                    <p className="text-gray-500">
+                        {searchQuery || category !== 'all'
+                            ? 'Try adjusting your filters or search query'
+                            : 'Be the first to list an item!'}
+                    </p>
+                </Card>
+            )}
+
             {/* Items Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {placeholderItems.map((item) => (
+            {!loading && !error && filteredItems.length > 0 && (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {filteredItems.map((item) => (
                     <Card
                         key={item.id}
                         hoverable
                         className="border-none shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden group p-0"
                     >
                         {/* Item Image */}
-                        <div className={`aspect-square bg-gradient-to-br ${getImageGradient(item.image)} relative overflow-hidden`}>
+                        <div className={`aspect-square bg-gradient-to-br ${getImageGradient(item.categoryName?.toLowerCase() || 'other')} relative overflow-hidden`}>
                             <div className="absolute inset-0 bg-black/10 group-hover:bg-black/0 transition-colors" />
-                            <div className="absolute inset-0 flex items-center justify-center">
-                                <ShoppingBag size={64} className="text-white/30" />
-                            </div>
+                            {item.imageUrls && item.imageUrls.length > 0 ? (
+                                <img src={item.imageUrls[0]} alt={item.title} className="w-full h-full object-cover" />
+                            ) : (
+                                <div className="absolute inset-0 flex items-center justify-center">
+                                    <ShoppingBag size={64} className="text-white/30" />
+                                </div>
+                            )}
                             <div className="absolute top-4 right-4 space-y-2">
-                                <button className="p-2 bg-white/90 backdrop-blur-sm rounded-full hover:bg-white transition-colors shadow-lg">
-                                    <Heart size={18} className="text-gray-700" />
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        toggleWishlist(item.id);
+                                    }}
+                                    className="p-2 bg-white/90 backdrop-blur-sm rounded-full shadow-lg hover:scale-110 transition-transform"
+                                >
+                                    <Heart
+                                        size={18}
+                                        className={wishlist.includes(item.id) ? 'text-red-500 fill-red-500' : 'text-gray-700'}
+                                    />
                                 </button>
                             </div>
                             <div className="absolute bottom-4 left-4">
-                                <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getConditionBadge(item.condition)}`}>
-                                    {item.condition}
+                                <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getConditionBadge(item.conditionStatus || 'GOOD')}`}>
+                                    {item.conditionStatus?.replace('_', ' ') || 'Used'}
                                 </span>
                             </div>
                         </div>
@@ -193,7 +296,7 @@ const Marketplace = () => {
                             <h3 className="font-bold text-lg text-gray-900 mb-2 line-clamp-2 group-hover:text-green-600 transition-colors">
                                 {item.title}
                             </h3>
-                            
+
                             <div className="flex items-center justify-between mb-4">
                                 <div>
                                     <div className="flex items-center text-green-600 font-bold text-2xl">
@@ -204,7 +307,7 @@ const Marketplace = () => {
                                 <div className="flex items-center space-x-2 text-sm text-gray-500">
                                     <span className="flex items-center">
                                         <Heart size={14} className="mr-1" />
-                                        {item.likes}
+                                        {item.viewCount || 0}
                                     </span>
                                 </div>
                             </div>
@@ -212,19 +315,28 @@ const Marketplace = () => {
                             <div className="flex items-center justify-between text-sm mb-4 pb-4 border-b border-gray-100">
                                 <div className="flex items-center space-x-1">
                                     <Tag size={14} className="text-gray-400" />
-                                    <span className="text-gray-600">{item.category}</span>
+                                    <span className="text-gray-600">{item.categoryName || 'Other'}</span>
                                 </div>
-                                <span className="text-gray-500">{item.posted}</span>
+                                <span className="text-gray-500 text-xs">
+                                    {item.location || 'NUST'}
+                                </span>
                             </div>
 
                             <div className="flex items-center justify-between">
                                 <div>
                                     <p className="text-xs text-gray-500">Seller</p>
-                                    <p className="font-semibold text-gray-900">{item.seller}</p>
+                                    <p className="font-semibold text-gray-900">
+                                        {item.seller?.name || 'Student'}
+                                    </p>
                                 </div>
                                 <Button
                                     size="sm"
                                     className="bg-green-600 hover:bg-green-700 text-white"
+                                    onClick={() => {
+                                        if (item.seller?.email) {
+                                            window.location.href = `mailto:${item.seller.email}?subject=Interested in ${encodeURIComponent(item.title)}&body=Hi, I am interested in your item "${encodeURIComponent(item.title)}" listed for Rs. ${item.price}.`;
+                                        }
+                                    }}
                                 >
                                     <MessageCircle size={16} className="mr-1" />
                                     Contact
@@ -232,15 +344,9 @@ const Marketplace = () => {
                             </div>
                         </div>
                     </Card>
-                ))}
-            </div>
-
-            {/* Load More */}
-            <div className="text-center">
-                <Button variant="outline" size="lg" className="px-8">
-                    Load More Items
-                </Button>
-            </div>
+                    ))}
+                </div>
+            )}
 
             {/* Info Card */}
             <Card className="bg-gradient-to-r from-green-50 to-emerald-50 border-green-200 border">
@@ -251,11 +357,168 @@ const Marketplace = () => {
                     <div>
                         <h3 className="font-semibold text-gray-900 mb-1">💡 Safe Trading Tips</h3>
                         <p className="text-sm text-gray-700">
-                            Always meet in public places on campus. Verify items before payment. Report suspicious activity. Full marketplace features coming soon!
+                            Always meet in public places on campus. Verify items before payment. Report suspicious activity.
                         </p>
                     </div>
                 </div>
             </Card>
+
+            {/* Sell Item Modal */}
+            {showModal && (
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                    <Card className="max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+                        <div className="flex items-center justify-between mb-6">
+                            <h2 className="text-2xl font-bold text-gray-900">Sell an Item</h2>
+                            <button
+                                onClick={() => setShowModal(false)}
+                                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                            >
+                                <X size={24} className="text-gray-600" />
+                            </button>
+                        </div>
+
+                        <form onSubmit={handleSubmit} className="space-y-4">
+                            <div>
+                                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                    Item Title *
+                                </label>
+                                <input
+                                    type="text"
+                                    name="title"
+                                    value={formData.title}
+                                    onChange={handleChange}
+                                    required
+                                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all text-gray-900 placeholder-gray-500"
+                                    placeholder="e.g., iPhone 13 Pro"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                    Price (Rs.) *
+                                </label>
+                                <input
+                                    type="number"
+                                    name="price"
+                                    value={formData.price}
+                                    onChange={handleChange}
+                                    required
+                                    min="0"
+                                    step="0.01"
+                                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all text-gray-900 placeholder-gray-500"
+                                    placeholder="5000"
+                                />
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                        Condition *
+                                    </label>
+                                    <select
+                                        name="conditionStatus"
+                                        value={formData.conditionStatus}
+                                        onChange={handleChange}
+                                        required
+                                        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all text-gray-900"
+                                    >
+                                        <option value="NEW">New</option>
+                                        <option value="USED">Used</option>
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                        Location
+                                    </label>
+                                    <input
+                                        type="text"
+                                        name="location"
+                                        value={formData.location}
+                                        onChange={handleChange}
+                                        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all text-gray-900 placeholder-gray-500"
+                                        placeholder="e.g., SEECS"
+                                    />
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                    Description *
+                                </label>
+                                <textarea
+                                    name="description"
+                                    value={formData.description}
+                                    onChange={handleChange}
+                                    required
+                                    rows="5"
+                                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all resize-none text-gray-900 placeholder-gray-500"
+                                    placeholder="Describe your item, include any defects or special features..."
+                                ></textarea>
+                            </div>
+
+                            {/* Image Upload */}
+                            <div>
+                                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                    Images (Optional)
+                                </label>
+                                <input
+                                    type="file"
+                                    accept="image/*"
+                                    multiple
+                                    onChange={handleImageUpload}
+                                    disabled={uploadingImage}
+                                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all text-gray-700"
+                                />
+                                {uploadingImage && (
+                                    <p className="text-sm text-green-600 mt-2">Uploading images...</p>
+                                )}
+                                {formData.imageUrls.length > 0 && (
+                                    <div className="mt-3 grid grid-cols-3 gap-2">
+                                        {formData.imageUrls.map((url, index) => (
+                                            <div key={index} className="relative group">
+                                                <img
+                                                    src={url}
+                                                    alt={`Upload ${index + 1}`}
+                                                    className="w-full h-20 object-cover rounded-lg"
+                                                />
+                                                <button
+                                                    type="button"
+                                                    onClick={() => removeImage(index)}
+                                                    className="absolute top-1 right-1 bg-red-600 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                                                >
+                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                                    </svg>
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="flex space-x-3 pt-4">
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    onClick={() => setShowModal(false)}
+                                    className="flex-1"
+                                >
+                                    Cancel
+                                </Button>
+                                <Button
+                                    type="submit"
+                                    loading={submitting}
+                                    disabled={submitting}
+                                    className="flex-1 bg-green-600 hover:bg-green-700 text-white"
+                                >
+                                    {submitting ? 'Listing...' : 'List Item'}
+                                </Button>
+                            </div>
+                        </form>
+                    </Card>
+                </div>
+            )}
         </div>
     );
 };

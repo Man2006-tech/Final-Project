@@ -5,6 +5,8 @@ import ProtectedRoute from './components/auth/ProtectedRoute';
 import RoleBasedRoute from './components/auth/RoleBasedRoute';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
 import Home from './pages/Home';
 import Profile from './pages/Profile';
 import AdminPanel from './pages/AdminPanel';
@@ -16,6 +18,7 @@ import LostFound from './pages/LostFound';
 import Jobs from './pages/Jobs';
 import Complaints from './pages/Complaints';
 import Messages from './pages/Messages';
+import VenueBooking from './pages/VenueBooking';
 
 
 const RootRedirect = () => {
@@ -31,6 +34,8 @@ function App() {
           <Route path="/" element={<RootRedirect />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
 
           {/* Public Protected Routes */}
           <Route
@@ -146,8 +151,16 @@ function App() {
             }
           />
 
-
-
+          <Route
+            path="/venue-booking"
+            element={
+              <ProtectedRoute>
+                <DashboardLayout>
+                  <VenueBooking />
+                </DashboardLayout>
+              </ProtectedRoute>
+            }
+          />
 
           <Route
             path="/messages"
