@@ -65,8 +65,9 @@ public class RideShare extends BaseEntity {
     @Column(name = "contact_number", length = 20)
     private String contactNumber;
 
-    @OneToMany(mappedBy = "ride", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "ride")
     @Builder.Default
+    @com.fasterxml.jackson.annotation.JsonIgnore
     private List<RideRequest> requests = new ArrayList<RideRequest>();
 
     public boolean isFull() {

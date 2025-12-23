@@ -110,8 +110,11 @@ export const rideAPI = {
     deleteRide: (rideId) => api.delete(`/rides/${rideId}`),
     requestRide: (rideId, userId, requestData = { seatsRequested: 1, message: "Interested" }) =>
         api.post(`/rides/${rideId}/request?passengerId=${userId}`, requestData),
-    cancelRequest: (rideId, userId) =>
-        api.delete(`/rides/${rideId}/cancel?userId=${userId}`),
+    getRideRequests: (rideId) => api.get(`/rides/${rideId}/requests`),
+    getPassengerRequests: (passengerId) => api.get(`/rides/requests/passenger/${passengerId}`),
+    acceptRequest: (requestId) => api.patch(`/rides/requests/${requestId}/accept`),
+    rejectRequest: (requestId) => api.patch(`/rides/requests/${requestId}/reject`),
+    deleteRequest: (requestId) => api.delete(`/rides/requests/${requestId}`),
 };
 
 // Lost & Found APIs
@@ -142,6 +145,8 @@ export const messageAPI = {
     getConversationPartners: (userId) => api.get(`/messages/partners/${userId}`),
     getUnreadMessages: (userId) => api.get(`/messages/unread/${userId}`),
     markAsRead: (messageId) => api.patch(`/messages/${messageId}/read`),
+    deleteConversation: (userId1, userId2) =>
+        api.delete(`/messages/conversation/${userId1}/${userId2}`),
 };
 
 // Club APIs

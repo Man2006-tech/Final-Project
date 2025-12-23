@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Car, MapPin, Users, Clock, Plus, Filter, Navigation, DollarSign, X, MessageCircle, AlertTriangle } from 'lucide-react';
+import { Car, MapPin, Users, Clock, Plus, Filter, Navigation, DollarSign, X, MessageCircle, AlertTriangle, Check, XCircle, Inbox } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import Card from '../components/common/Card';
 import Button from '../components/common/Button';
@@ -12,10 +12,12 @@ const Rides = () => {
     const [rides, setRides] = useState([]);
     const [loading, setLoading] = useState(true);
     const [showCreateModal, setShowCreateModal] = useState(false);
-    const [activeTab, setActiveTab] = useState('available'); // available, myRides
+    const [activeTab, setActiveTab] = useState('available'); // available, myRides, myRequests
     const [creating, setCreating] = useState(false);
     const [requesting, setRequesting] = useState(null);
     const [requestedRides, setRequestedRides] = useState(new Set()); // Track rides user has requested
+    const [myRequests, setMyRequests] = useState([]); // User's ride requests
+    const [rideRequests, setRideRequests] = useState({}); // Requests for driver's rides {rideId: [requests]}
     const [error, setError] = useState('');
     const [successMessage, setSuccessMessage] = useState('');
 
@@ -33,7 +35,10 @@ const Rides = () => {
 
     useEffect(() => {
         fetchRides();
-    }, [activeTab]);
+        if (user?.userId) {
+            fetchMyRequests();
+        }
+    }, [activeTab, user?.userId]);
 
     const fetchRides = async () => {
         try {
@@ -42,7 +47,12 @@ const Rides = () => {
             const allRides = response.data;
 
             if (activeTab === 'myRides') {
-                setRides(allRides.filter(r => r.driver.userId === user?.userId));
+                const myRides = allRides.filter(r => r.driver.userId === user?.userId);
+                setRides(myRides);
+                // Fetch requests for each of driver's rides
+                await fetchRequestsForMyRides(myRides);
+            } else if (activeTab === 'myRequests') {
+                setRides([]);
             } else {
                 setRides(allRides.filter(r => r.status === 'ACTIVE'));
             }
@@ -50,6 +60,31 @@ const Rides = () => {
             console.error("Failed to fetch rides", err);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const fetchMyRequests = async () => {
+        try {
+            const response = await rideAPI.getPassengerRequests(user.userId);
+            setMyRequests(response.data);
+            // Mark rides as requested
+            const requestedRideIds = new Set(response.data.map(req => req.ride.rideId));
+            setRequestedRides(requestedRideIds);
+        } catch (err) {
+            console.error("Failed to fetch my requests", err);
+        }
+    };
+
+    const fetchRequestsForMyRides = async (myRides) => {
+        try {
+            const requestsMap = {};
+            await Promise.all(myRides.map(async (ride) => {
+                const response = await rideAPI.getRideRequests(ride.rideId);
+                requestsMap[ride.rideId] = response.data;
+            }));
+            setRideRequests(requestsMap);
+        } catch (err) {
+            console.error("Failed to fetch ride requests", err);
         }
     };
 
@@ -148,6 +183,63 @@ const Rides = () => {
         navigate('/messages', { state: { selectedUser: driver } });
     };
 
+    const handleAcceptRequest = async (requestId) => {
+        try {
+            await rideAPI.acceptRequest(requestId);
+            setSuccessMessage('Request accepted! Seats have been allocated.');
+            setTimeout(() => setSuccessMessage(''), 3000);
+            fetchRides(); // Refresh to update seat count
+            if (activeTab === 'myRides') {
+                const myRides = rides;
+                await fetchRequestsForMyRides(myRides);
+            }
+        } catch (err) {
+            console.error("Failed to accept request", err);
+            setError(err.response?.data?.message || "Failed to accept request");
+            setTimeout(() => setError(''), 3000);
+        }
+    };
+
+    const handleRejectRequest = async (requestId) => {
+        try {
+            await rideAPI.rejectRequest(requestId);
+            setSuccessMessage('Request rejected.');
+            setTimeout(() => setSuccessMessage(''), 3000);
+            if (activeTab === 'myRides') {
+                const myRides = rides;
+                await fetchRequestsForMyRides(myRides);
+            }
+        } catch (err) {
+            console.error("Failed to reject request", err);
+            setError(err.response?.data?.message || "Failed to reject request");
+            setTimeout(() => setError(''), 3000);
+        }
+    };
+
+    const handleCancelMyRequest = async (rideId) => {
+        try {
+            // Find the request for this ride
+            const request = myRequests.find(req => req.ride.rideId === rideId);
+            if (request) {
+                await rideAPI.deleteRequest(request.requestId);
+                setSuccessMessage('Request cancelled successfully.');
+                setTimeout(() => setSuccessMessage(''), 3000);
+                // Remove from requested rides set
+                setRequestedRides(prev => {
+                    const newSet = new Set(prev);
+                    newSet.delete(rideId);
+                    return newSet;
+                });
+                // Refresh requests
+                await fetchMyRequests();
+            }
+        } catch (err) {
+            console.error("Failed to cancel request", err);
+            setError(err.response?.data?.message || "Failed to cancel request");
+            setTimeout(() => setError(''), 3000);
+        }
+    };
+
     return (
         <div className="space-y-6 animate-fade-in relative">
             {/* Success Message */}
@@ -213,6 +305,15 @@ const Rides = () => {
                     >
                         My Rides
                     </button>
+                    <button
+                        onClick={() => setActiveTab('myRequests')}
+                        className={`px-6 py-2.5 rounded-lg font-medium transition-all duration-300 ${activeTab === 'myRequests'
+                            ? 'bg-blue-600 text-white shadow-md'
+                            : 'text-gray-600 hover:text-gray-900'
+                            }`}
+                    >
+                        My Requests
+                    </button>
                 </div>
 
                 <Button variant="outline" className="flex items-center space-x-2">
@@ -273,8 +374,7 @@ const Rides = () => {
                                             </div>
                                             <div className="text-right">
                                                 <div className="flex items-center justify-end space-x-1 text-blue-600 font-bold text-xl">
-                                                    <DollarSign size={20} />
-                                                    <span>{ride.pricePerSeat}</span>
+                                                    <span>Rs {ride.pricePerSeat}</span>
                                                 </div>
                                                 <p className="text-xs text-gray-500">per seat</p>
                                                 {isNegotiable && <span className="text-[10px] text-green-600 font-bold uppercase">Negotiable</span>}
@@ -331,7 +431,7 @@ const Rides = () => {
                                                     ride.status !== 'CANCELLED' && (
                                                         <Button
                                                             size="sm"
-                                                            className="bg-red-50 hover:bg-red-100 text-red-600 border border-red-200"
+                                                            className="bg-red-600 hover:bg-red-700 text-white border-none"
                                                             onClick={() => handleCancelRide(ride.rideId)}
                                                         >
                                                             Cancel Ride
@@ -360,9 +460,130 @@ const Rides = () => {
                                         </div>
                                     </div>
                                 </div>
+
+                                {/* Ride Requests Section for Driver */}
+                                {isOwner && activeTab === 'myRides' && rideRequests[ride.rideId]?.length > 0 && (
+                                    <div className="mt-4 pt-4 border-t border-gray-100">
+                                        <h4 className="text-sm font-bold text-gray-700 mb-3 flex items-center">
+                                            <Inbox size={16} className="mr-2" />
+                                            Ride Requests ({rideRequests[ride.rideId].length})
+                                        </h4>
+                                        <div className="space-y-2">
+                                            {rideRequests[ride.rideId].map((request) => (
+                                                <div key={request.requestId} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                                                    <div className="flex items-center space-x-3">
+                                                        <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-bold">
+                                                            {request.passenger.name.charAt(0).toUpperCase()}
+                                                        </div>
+                                                        <div>
+                                                            <p className="font-medium text-gray-900 text-sm">{request.passenger.name}</p>
+                                                            <p className="text-xs text-gray-500">{request.seatsRequested} seat(s) • {request.message || 'No message'}</p>
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex space-x-2">
+                                                        {request.status === 'PENDING' ? (
+                                                            <>
+                                                                <Button
+                                                                    size="sm"
+                                                                    className="bg-green-500 hover:bg-green-600 text-white"
+                                                                    onClick={() => handleAcceptRequest(request.requestId)}
+                                                                >
+                                                                    <Check size={14} />
+                                                                </Button>
+                                                                <Button
+                                                                    size="sm"
+                                                                    className="bg-red-500 hover:bg-red-600 text-white"
+                                                                    onClick={() => handleRejectRequest(request.requestId)}
+                                                                >
+                                                                    <XCircle size={14} />
+                                                                </Button>
+                                                            </>
+                                                        ) : (
+                                                            <span className={`text-xs px-3 py-1 rounded-full font-medium ${
+                                                                request.status === 'ACCEPTED' ? 'bg-green-100 text-green-700' :
+                                                                request.status === 'REJECTED' ? 'bg-red-100 text-red-700' :
+                                                                'bg-gray-100 text-gray-700'
+                                                            }`}>
+                                                                {request.status}
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
                             </Card>
                         );
                     })}
+                </div>
+            )}
+
+            {/* My Requests Tab Content */}
+            {activeTab === 'myRequests' && (
+                <div className="space-y-4">
+                    {loading ? (
+                        <div className="text-center py-12">
+                            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+                            <p className="mt-4 text-gray-600">Loading your requests...</p>
+                        </div>
+                    ) : myRequests.length === 0 ? (
+                        <div className="text-center py-12 bg-white rounded-2xl shadow-sm border border-gray-100">
+                            <Inbox size={48} className="mx-auto text-gray-300 mb-4" />
+                            <h3 className="text-lg font-medium text-gray-900">No ride requests</h3>
+                            <p className="text-gray-500">You haven't requested any rides yet</p>
+                        </div>
+                    ) : (
+                        myRequests.map((request) => (
+                            <Card key={request.requestId} className="border-none shadow-lg">
+                                <div className="flex items-start justify-between">
+                                    <div className="flex-1">
+                                        <div className="flex items-center space-x-3 mb-3">
+                                            <h3 className="font-bold text-lg text-gray-900">
+                                                {request.ride.pickupLocation} → {request.ride.destination}
+                                            </h3>
+                                            <span className={`text-xs px-3 py-1 rounded-full font-medium ${
+                                                request.status === 'PENDING' ? 'bg-yellow-100 text-yellow-700' :
+                                                request.status === 'ACCEPTED' ? 'bg-green-100 text-green-700' :
+                                                request.status === 'REJECTED' ? 'bg-red-100 text-red-700' :
+                                                'bg-gray-100 text-gray-700'
+                                            }`}>
+                                                {request.status}
+                                            </span>
+                                        </div>
+                                        <div className="space-y-2 text-sm text-gray-600">
+                                            <p><strong>Driver:</strong> {request.ride.driver.name}</p>
+                                            <p><strong>Departure:</strong> {new Date(request.ride.departureTime).toLocaleString()}</p>
+                                            <p><strong>Seats Requested:</strong> {request.seatsRequested}</p>
+                                            {request.message && <p><strong>Message:</strong> {request.message}</p>}
+                                        </div>
+                                    </div>
+                                    <div className="flex flex-col space-y-2">
+                                        {request.status === 'ACCEPTED' && (
+                                            <Button
+                                                size="sm"
+                                                variant="ghost"
+                                                className="text-blue-600 hover:text-blue-700"
+                                                onClick={() => handleMessageDriver(request.ride.driver)}
+                                            >
+                                                <MessageCircle size={18} className="mr-1" />
+                                                Message Driver
+                                            </Button>
+                                        )}
+                                        {request.status === 'PENDING' && (
+                                            <Button
+                                                size="sm"
+                                                className="bg-red-600 hover:bg-red-700 text-white"
+                                                onClick={() => handleCancelMyRequest(request.ride.rideId)}
+                                            >
+                                                Cancel Request
+                                            </Button>
+                                        )}
+                                    </div>
+                                </div>
+                            </Card>
+                        ))
+                    )}
                 </div>
             )}
 

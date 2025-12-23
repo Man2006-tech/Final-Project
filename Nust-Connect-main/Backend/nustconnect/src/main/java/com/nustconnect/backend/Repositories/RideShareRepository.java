@@ -11,13 +11,24 @@ import java.util.List;
 
 @Repository
 public interface RideShareRepository extends JpaRepository<RideShare, Long> {
-    List<RideShare> findByDriverUserId(Long driverId);
-    List<RideShare> findByStatus(String status);
-    List<RideShare> findByDepartureTimeAfter(LocalDateTime dateTime);
+    @Query("SELECT r FROM RideShare r LEFT JOIN FETCH r.driver")
+    List<RideShare> findAllWithDriver();
 
-    @Query("SELECT r FROM RideShare r WHERE r.departureTime >= :now AND r.status = 'ACTIVE' AND r.deletedAt IS NULL ORDER BY r.departureTime ASC")
+    @Query("SELECT r FROM RideShare r LEFT JOIN FETCH r.driver WHERE r.rideId = :rideId")
+    RideShare findByRideId(@Param("rideId") Long rideId);
+
+    @Query("SELECT r FROM RideShare r LEFT JOIN FETCH r.driver WHERE r.driver.userId = :driverId")
+    List<RideShare> findByDriverUserId(@Param("driverId") Long driverId);
+
+    @Query("SELECT r FROM RideShare r LEFT JOIN FETCH r.driver WHERE r.status = :status")
+    List<RideShare> findByStatus(@Param("status") String status);
+
+    @Query("SELECT r FROM RideShare r LEFT JOIN FETCH r.driver WHERE r.departureTime > :dateTime")
+    List<RideShare> findByDepartureTimeAfter(@Param("dateTime") LocalDateTime dateTime);
+
+    @Query("SELECT r FROM RideShare r LEFT JOIN FETCH r.driver WHERE r.departureTime >= :now AND r.status = 'ACTIVE' AND r.deletedAt IS NULL ORDER BY r.departureTime ASC")
     List<RideShare> findUpcomingRides(@Param("now") LocalDateTime now);
 
-    @Query("SELECT r FROM RideShare r WHERE (r.pickupLocation LIKE %:keyword% OR r.destination LIKE %:keyword%) AND r.status = 'ACTIVE' AND r.deletedAt IS NULL")
+    @Query("SELECT r FROM RideShare r LEFT JOIN FETCH r.driver WHERE (r.pickupLocation LIKE %:keyword% OR r.destination LIKE %:keyword%) AND r.status = 'ACTIVE' AND r.deletedAt IS NULL")
     List<RideShare> searchRides(@Param("keyword") String keyword);
 }

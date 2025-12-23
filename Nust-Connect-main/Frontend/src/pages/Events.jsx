@@ -589,7 +589,7 @@ const Events = () => {
                                             <input
                                                 type="text"
                                                 required
-                                                className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-purple-500 outline-none"
+                                                className="w-full px-4 py-2 rounded-lg border border-gray-300 text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-purple-500 outline-none"
                                                 value={createData.title}
                                                 onChange={(e) => setCreateData({ ...createData, title: e.target.value })}
                                             />
@@ -600,7 +600,7 @@ const Events = () => {
                                             <label className="text-sm font-medium text-gray-700">Venue</label>
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                 <select
-                                                    className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-purple-500 outline-none"
+                                                    className="w-full px-4 py-2 rounded-lg border border-gray-300 text-gray-900 focus:ring-2 focus:ring-purple-500 outline-none"
                                                     value={createData.venueId}
                                                     onChange={(e) => {
                                                         const selectedVenue = venues.find(v => v.venueId === parseInt(e.target.value));
@@ -624,7 +624,7 @@ const Events = () => {
                                                     <input
                                                         type="text"
                                                         placeholder="Or enter location manually"
-                                                        className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-purple-500 outline-none"
+                                                        className="w-full px-4 py-2 rounded-lg border border-gray-300 text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-purple-500 outline-none"
                                                         value={createData.venueName}
                                                         onChange={(e) => setCreateData({ ...createData, venueName: e.target.value })}
                                                     />
@@ -637,7 +637,7 @@ const Events = () => {
                                             <textarea
                                                 required
                                                 rows={3}
-                                                className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-purple-500 outline-none"
+                                                className="w-full px-4 py-2 rounded-lg border border-gray-300 text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-purple-500 outline-none"
                                                 value={createData.description}
                                                 onChange={(e) => setCreateData({ ...createData, description: e.target.value })}
                                             />
@@ -799,7 +799,7 @@ const Events = () => {
                                         <input
                                             type="text"
                                             required
-                                            className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-purple-500 outline-none"
+                                            className="w-full px-4 py-2 rounded-lg border border-gray-300 text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-purple-500 outline-none"
                                             value={clubData.name}
                                             onChange={(e) => setClubData({ ...clubData, name: e.target.value })}
                                         />
@@ -810,7 +810,7 @@ const Events = () => {
                                         <textarea
                                             required
                                             rows={2}
-                                            className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-purple-500 outline-none"
+                                            className="w-full px-4 py-2 rounded-lg border border-gray-300 text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-purple-500 outline-none"
                                             value={clubData.description}
                                             onChange={(e) => setClubData({ ...clubData, description: e.target.value })}
                                         />
@@ -819,7 +819,7 @@ const Events = () => {
                                     <div className="space-y-1">
                                         <label className="text-sm font-medium text-gray-700">Category</label>
                                         <select
-                                            className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-purple-500 outline-none"
+                                            className="w-full px-4 py-2 rounded-lg border border-gray-300 text-gray-900 focus:ring-2 focus:ring-purple-500 outline-none"
                                             value={clubData.category}
                                             onChange={(e) => setClubData({ ...clubData, category: e.target.value })}
                                         >
@@ -834,7 +834,7 @@ const Events = () => {
                                         <input
                                             type="email"
                                             placeholder="club@nust.edu.pk"
-                                            className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-purple-500 outline-none"
+                                            className="w-full px-4 py-2 rounded-lg border border-gray-300 text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-purple-500 outline-none"
                                             value={clubData.contactEmail}
                                             onChange={(e) => setClubData({ ...clubData, contactEmail: e.target.value })}
                                         />
@@ -915,7 +915,7 @@ const Events = () => {
                                                     <input
                                                         type="text"
                                                         required
-                                                        className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-purple-500 outline-none"
+                                                        className="w-full px-4 py-2 rounded-lg border border-gray-300 text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-purple-500 outline-none"
                                                         value={regData.name}
                                                         onChange={(e) => setRegData({ ...regData, name: e.target.value })}
                                                     />
@@ -926,7 +926,7 @@ const Events = () => {
                                                         type="text"
                                                         required
                                                         placeholder="e.g. 123456"
-                                                        className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-purple-500 outline-none"
+                                                        className="w-full px-4 py-2 rounded-lg border border-gray-300 text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-purple-500 outline-none"
                                                         value={regData.cmsId}
                                                         onChange={(e) => setRegData({ ...regData, cmsId: e.target.value })}
                                                     />
@@ -950,7 +950,7 @@ const Events = () => {
                                                     <input
                                                         type="text"
                                                         required
-                                                        className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-purple-500 outline-none"
+                                                        className="w-full px-4 py-2 rounded-lg border border-gray-300 text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-purple-500 outline-none"
                                                         value={regData.department}
                                                         onChange={(e) => setRegData({ ...regData, department: e.target.value })}
                                                     />
@@ -961,7 +961,7 @@ const Events = () => {
                                                         type="text"
                                                         required
                                                         placeholder="e.g. 2022"
-                                                        className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-purple-500 outline-none"
+                                                        className="w-full px-4 py-2 rounded-lg border border-gray-300 text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-purple-500 outline-none"
                                                         value={regData.year}
                                                         onChange={(e) => setRegData({ ...regData, year: e.target.value })}
                                                     />
@@ -1012,7 +1012,7 @@ const Events = () => {
                                                             type="text"
                                                             required
                                                             placeholder="Enter Trx ID from SMS/App"
-                                                            className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-purple-500 outline-none"
+                                                            className="w-full px-4 py-2 rounded-lg border border-gray-300 text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-purple-500 outline-none"
                                                             value={regData.transactionId}
                                                             onChange={(e) => setRegData({ ...regData, transactionId: e.target.value })}
                                                         />

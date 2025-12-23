@@ -177,7 +177,7 @@ const Clubs = () => {
                     <input
                         type="text"
                         placeholder="Search clubs, societies..."
-                        className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 outline-none transition-all shadow-sm"
+                        className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-blue-500 outline-none transition-all shadow-sm"
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                     />
@@ -320,7 +320,7 @@ const Clubs = () => {
                                         <input
                                             type="text"
                                             required
-                                            className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none"
+                                            className="w-full px-4 py-2 rounded-lg border border-gray-300 text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-blue-500 outline-none"
                                             value={createData.name}
                                             onChange={(e) => setCreateData({ ...createData, name: e.target.value })}
                                         />
@@ -331,7 +331,7 @@ const Clubs = () => {
                                         <textarea
                                             required
                                             rows={3}
-                                            className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none"
+                                            className="w-full px-4 py-2 rounded-lg border border-gray-300 text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-blue-500 outline-none"
                                             value={createData.description}
                                             onChange={(e) => setCreateData({ ...createData, description: e.target.value })}
                                         />
@@ -340,7 +340,7 @@ const Clubs = () => {
                                     <div className="space-y-1">
                                         <label className="text-sm font-medium text-gray-700">Category</label>
                                         <select
-                                            className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none"
+                                            className="w-full px-4 py-2 rounded-lg border border-gray-300 text-gray-900 focus:ring-2 focus:ring-blue-500 outline-none"
                                             value={createData.category}
                                             onChange={(e) => setCreateData({ ...createData, category: e.target.value })}
                                         >
@@ -355,7 +355,7 @@ const Clubs = () => {
                                         <input
                                             type="email"
                                             placeholder="club@nust.edu.pk"
-                                            className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none"
+                                            className="w-full px-4 py-2 rounded-lg border border-gray-300 text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-blue-500 outline-none"
                                             value={createData.contactEmail}
                                             onChange={(e) => setCreateData({ ...createData, contactEmail: e.target.value })}
                                         />
@@ -366,7 +366,7 @@ const Clubs = () => {
                                             <label className="text-sm font-medium text-gray-700">Logo URL (Optional)</label>
                                             <input
                                                 type="url"
-                                                className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none"
+                                                className="w-full px-4 py-2 rounded-lg border border-gray-300 text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-blue-500 outline-none"
                                                 value={createData.logoUrl}
                                                 onChange={(e) => setCreateData({ ...createData, logoUrl: e.target.value })}
                                             />
@@ -375,7 +375,7 @@ const Clubs = () => {
                                             <label className="text-sm font-medium text-gray-700">Cover URL (Optional)</label>
                                             <input
                                                 type="url"
-                                                className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none"
+                                                className="w-full px-4 py-2 rounded-lg border border-gray-300 text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-blue-500 outline-none"
                                                 value={createData.coverImageUrl}
                                                 onChange={(e) => setCreateData({ ...createData, coverImageUrl: e.target.value })}
                                             />

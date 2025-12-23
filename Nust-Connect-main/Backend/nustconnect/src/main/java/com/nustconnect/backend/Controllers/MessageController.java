@@ -57,6 +57,14 @@ public class MessageController {
         return ResponseEntity.ok("Message deleted successfully");
     }
 
+    @DeleteMapping("/conversation/{userId1}/{userId2}")
+    public ResponseEntity<String> deleteConversation(
+            @PathVariable Long userId1,
+            @PathVariable Long userId2) {
+        messageService.deleteConversation(userId1, userId2);
+        return ResponseEntity.ok("Conversation deleted successfully");
+    }
+
     @GetMapping("/partners/{userId}")
     public ResponseEntity<List<UserSummaryDTO>> getConversationPartners(@PathVariable Long userId) {
         List<User> partners = messageService.getConversationPartners(userId);

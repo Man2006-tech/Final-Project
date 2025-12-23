@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { messageAPI, userAPI } from '../services/api';
-import { User, Send, Search, MoreVertical, Phone, Video } from 'lucide-react';
+import { User, Send, Search, MoreVertical, Trash2 } from 'lucide-react';
 import Button from '../components/common/Button';
 
 const Messages = () => {
@@ -14,13 +14,14 @@ const Messages = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const [searchResults, setSearchResults] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [showOptionsMenu, setShowOptionsMenu] = useState(false);
     const messagesEndRef = useRef(null);
     const location = useLocation();
 
     useEffect(() => {
         if (location.state?.selectedUser) {
             startChat(location.state.selectedUser);
-            // Optional: Clear state to avoid reopening on refresh? 
+            // Optional: Clear state to avoid reopening on refresh?
             // window.history.replaceState({}, document.title)
         }
     }, [location.state]);
@@ -28,6 +29,17 @@ const Messages = () => {
     useEffect(() => {
         fetchConversations();
     }, [currentUser]);
+
+    // Close options menu when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (showOptionsMenu && !event.target.closest('.options-menu-container')) {
+                setShowOptionsMenu(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, [showOptionsMenu]);
 
     useEffect(() => {
         if (selectedUser) {
@@ -118,6 +130,25 @@ const Messages = () => {
         setSelectedUser(user);
         setSearchQuery('');
         setSearchResults([]);
+        setShowOptionsMenu(false);
+    };
+
+    const handleDeleteConversation = async () => {
+        if (selectedUser) {
+            try {
+                // Delete conversation from database
+                await messageAPI.deleteConversation(currentUser.userId, selectedUser.userId);
+
+                // Remove from conversations list
+                setConversations(conversations.filter(c => c.userId !== selectedUser.userId));
+                // Clear selected user and messages
+                setSelectedUser(null);
+                setMessages([]);
+                setShowOptionsMenu(false);
+            } catch (error) {
+                console.error('Failed to delete conversation', error);
+            }
+        }
     };
 
     const scrollToBottom = () => {
@@ -136,7 +167,7 @@ const Messages = () => {
                             placeholder="Search people..."
                             value={searchQuery}
                             onChange={handleSearch}
-                            className="w-full bg-slate-100 border border-slate-200 rounded-lg pl-10 pr-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                            className="w-full bg-slate-100 border border-slate-200 rounded-lg pl-10 pr-4 py-2 text-sm text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500"
                         />
                         <Search className="absolute left-3 top-2.5 text-slate-400" size={16} />
                     </div>
@@ -209,10 +240,26 @@ const Messages = () => {
                                     <p className="text-xs text-green-600 flex items-center"><span className="w-2 h-2 bg-green-500 rounded-full mr-1"></span> Online</p>
                                 </div>
                             </div>
-                            <div className="flex space-x-2 text-slate-400">
-                                <button className="p-2 hover:bg-slate-100 rounded-full"><Phone size={20} /></button>
-                                <button className="p-2 hover:bg-slate-100 rounded-full"><Video size={20} /></button>
-                                <button className="p-2 hover:bg-slate-100 rounded-full"><MoreVertical size={20} /></button>
+                            <div className="relative options-menu-container">
+                                <button
+                                    className="p-2 hover:bg-slate-100 rounded-full text-slate-400"
+                                    onClick={() => setShowOptionsMenu(!showOptionsMenu)}
+                                >
+                                    <MoreVertical size={20} />
+                                </button>
+
+                                {/* Dropdown Menu */}
+                                {showOptionsMenu && (
+                                    <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-slate-200 z-10">
+                                        <button
+                                            onClick={handleDeleteConversation}
+                                            className="w-full px-4 py-3 text-left text-sm text-red-600 hover:bg-red-50 rounded-lg flex items-center space-x-2 transition-colors"
+                                        >
+                                            <Trash2 size={16} />
+                                            <span>Delete Conversation</span>
+                                        </button>
+                                    </div>
+                                )}
                             </div>
                         </div>
 
@@ -242,7 +289,7 @@ const Messages = () => {
                                     value={newMessage}
                                     onChange={(e) => setNewMessage(e.target.value)}
                                     placeholder="Type a message..."
-                                    className="flex-1 bg-slate-100 border border-slate-200 rounded-full px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 transition-shadow"
+                                    className="flex-1 bg-slate-100 border border-slate-200 rounded-full px-4 py-2.5 text-sm text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500 transition-shadow"
                                 />
                                 <button
                                     type="submit"

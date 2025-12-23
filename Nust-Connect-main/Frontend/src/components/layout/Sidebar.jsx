@@ -15,6 +15,7 @@ import {
     Shield,
     Camera,
     Building, // ✅ ADDED for Venue Booking icon
+    Mail, // ✅ ADDED for Messages icon
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
@@ -26,6 +27,7 @@ const Sidebar = () => {
         { name: 'Dashboard', icon: LayoutDashboard, path: '/dashboard', roles: ['ADMIN', 'FACULTY', 'STUDENT'] },
         { name: 'Social Feed', icon: Camera, path: '/feed', roles: ['ADMIN', 'FACULTY', 'STUDENT'] },
         { name: 'Profile', icon: User, path: '/profile', roles: ['ADMIN', 'FACULTY', 'STUDENT'] },
+        { name: 'Messages', icon: Mail, path: '/messages', roles: ['ADMIN', 'FACULTY', 'STUDENT'] }, // ✅ ADDED Messages
         { name: 'Admin Panel', icon: Shield, path: '/admin', roles: ['ADMIN', 'FACULTY'] },
         { name: 'Ride Sharing', icon: Car, path: '/rides', roles: ['ADMIN', 'FACULTY', 'STUDENT'] },
         { name: 'Events', icon: Calendar, path: '/events', roles: ['ADMIN', 'FACULTY', 'STUDENT'] },

@@ -39,12 +39,15 @@ public class RideShareService {
     }
 
     public RideShare getRideById(Long rideId) {
-        return rideRepository.findById(rideId)
-                .orElseThrow(() -> new IllegalArgumentException("Ride not found"));
+        RideShare ride = rideRepository.findByRideId(rideId);
+        if (ride == null) {
+            throw new IllegalArgumentException("Ride not found");
+        }
+        return ride;
     }
 
     public List<RideShare> getAllRides() {
-        return rideRepository.findAll();
+        return rideRepository.findAllWithDriver();
     }
 
     public List<RideShare> getRidesByDriver(Long driverId) {
@@ -117,8 +120,35 @@ public class RideShareService {
 
     public RideShare cancelRide(Long rideId) {
         RideShare ride = getRideById(rideId);
+
+        // Cancel the ride first
         ride.setStatus("CANCELLED");
-        return rideRepository.save(ride);
+        RideShare cancelledRide = rideRepository.save(ride);
+
+        // Handle ride requests separately (after ride is saved)
+        try {
+            List<RideRequest> allRequests = requestRepository.findSimpleByRideId(rideId);
+
+            if (allRequests != null && !allRequests.isEmpty()) {
+                for (RideRequest request : allRequests) {
+                    String status = request.getStatus();
+
+                    if ("PENDING".equals(status)) {
+                        // Reject pending requests
+                        request.setStatus("REJECTED");
+                        requestRepository.save(request);
+                    }
+
+                    // Note: We're not sending notifications to avoid lazy loading issues
+                    // You can add notifications later using a scheduled job or event listener
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("Error updating ride requests: " + e.getMessage());
+            // Don't fail the cancellation if request updates fail
+        }
+
+        return cancelledRide;
     }
 
     public void decrementSeats(Long rideId) {
