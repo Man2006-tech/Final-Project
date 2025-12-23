@@ -43,10 +43,14 @@ const Marketplace = () => {
             setLoading(true);
             setError('');
             const response = await marketplaceAPI.getAllItems(0, 100);
-            setItems(response.data.content || response.data || []);
+            // Only update state if we got valid response
+            if (response && response.data) {
+                setItems(response.data.content || response.data || []);
+            }
         } catch (err) {
             console.error('Error fetching marketplace items:', err);
             setError('Failed to load marketplace items');
+            // Keep existing items on error, don't clear them
         } finally {
             setLoading(false);
         }

@@ -61,15 +61,15 @@ public class MarketplaceItem extends BaseEntity {
 
     // ← REMOVED postedAt - use createdAt from BaseEntity instead
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "seller_id", nullable = false)
     private User seller;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "category_id")
     private MarketplaceCategory category;
 
-    @ElementCollection
+    @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "marketplace_item_images",
             joinColumns = @JoinColumn(name = "item_id"))
     @Column(name = "image_url", length = 500)

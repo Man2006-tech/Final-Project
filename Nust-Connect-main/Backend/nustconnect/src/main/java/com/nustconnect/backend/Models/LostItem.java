@@ -47,7 +47,7 @@ public class LostItem extends BaseEntity {
     @Column(name = "date_lost", nullable = false)
     private LocalDateTime dateLost;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "reported_by", nullable = false)
     private User reportedBy;
 

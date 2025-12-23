@@ -15,6 +15,7 @@ const Rides = () => {
     const [activeTab, setActiveTab] = useState('available'); // available, myRides
     const [creating, setCreating] = useState(false);
     const [requesting, setRequesting] = useState(null);
+    const [requestedRides, setRequestedRides] = useState(new Set()); // Track rides user has requested
     const [error, setError] = useState('');
     const [successMessage, setSuccessMessage] = useState('');
 
@@ -121,6 +122,7 @@ const Rides = () => {
 
         try {
             await rideAPI.requestRide(rideId, user.userId);
+            setRequestedRides(prev => new Set([...prev, rideId])); // Mark as requested
             setSuccessMessage('Ride request sent successfully! The driver will be notified.');
             setTimeout(() => setSuccessMessage(''), 5000);
             fetchRides();
@@ -129,6 +131,12 @@ const Rides = () => {
             const errorMsg = err.response?.data?.message ||
                 err.response?.data?.error ||
                 "Failed to request ride";
+
+            // If already requested, add to set
+            if (errorMsg.toLowerCase().includes('already') || errorMsg.toLowerCase().includes('duplicate')) {
+                setRequestedRides(prev => new Set([...prev, rideId]));
+            }
+
             setError(errorMsg);
             setTimeout(() => setError(''), 5000);
         } finally {
@@ -329,6 +337,14 @@ const Rides = () => {
                                                             Cancel Ride
                                                         </Button>
                                                     )
+                                                ) : requestedRides.has(ride.rideId) ? (
+                                                    <Button
+                                                        size="sm"
+                                                        className="bg-gray-400 cursor-not-allowed text-white"
+                                                        disabled={true}
+                                                    >
+                                                        Requested
+                                                    </Button>
                                                 ) : (
                                                     <Button
                                                         size="sm"

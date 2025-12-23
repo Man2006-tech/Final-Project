@@ -41,11 +41,17 @@ const LostFound = () => {
                 lostFoundAPI.getFoundItems()
             ]);
 
-            setLostItems(lostRes.data || []);
-            setFoundItems(foundRes.data || []);
+            // Only update state if we got valid responses
+            if (lostRes && lostRes.data) {
+                setLostItems(lostRes.data);
+            }
+            if (foundRes && foundRes.data) {
+                setFoundItems(foundRes.data);
+            }
         } catch (err) {
             console.error('Failed to fetch lost & found items:', err);
             setError('Failed to load items');
+            // Keep existing items on error, don't clear them
         } finally {
             setLoading(false);
         }
@@ -138,10 +144,14 @@ const LostFound = () => {
             setError('');
             setSuccess('');
 
+            // Truncate contact info to 20 chars max (database constraint)
+            const contactInfo = formData.contactInfo || user.email || user.phone || '';
+            const truncatedContact = contactInfo.length > 20 ? contactInfo.substring(0, 20) : contactInfo;
+
             const itemData = {
                 itemName: formData.itemName,
                 description: formData.description,
-                contactInfo: user.email || formData.contactInfo || '',
+                contactInfo: truncatedContact,
                 imageUrl: formData.imageUrl || null, // INCLUDE IMAGE URL
             };
 

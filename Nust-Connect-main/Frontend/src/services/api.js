@@ -93,6 +93,7 @@ export const eventAPI = {
         api.delete(`/events/${eventId}/unregister?userId=${userId}`),
     approveEvent: (eventId) => api.patch(`/events/${eventId}/approve`),
     getPendingEvents: () => api.get('/events/pending'),
+    deleteEvent: (eventId) => api.delete(`/events/${eventId}`),
 };
 
 

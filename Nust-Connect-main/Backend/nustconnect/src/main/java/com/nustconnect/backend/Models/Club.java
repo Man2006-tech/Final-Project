@@ -1,5 +1,6 @@
 package com.nustconnect.backend.Models;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.nustconnect.backend.Enums.ClubCategory;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
@@ -41,7 +42,7 @@ public class Club extends BaseEntity {
     @Column(columnDefinition = "TEXT")
     private String description;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "created_by")
     private User createdBy;
 
@@ -79,10 +80,12 @@ public class Club extends BaseEntity {
     private Boolean isRecruitmentOpen = true;
 
     @OneToMany(mappedBy = "club", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnore
     @Builder.Default
     private List<Event> events = new ArrayList<>();
 
     @OneToMany(mappedBy = "club")
+    @JsonIgnore
     @Builder.Default
     private List<ClubMembership> members = new ArrayList<>();
 

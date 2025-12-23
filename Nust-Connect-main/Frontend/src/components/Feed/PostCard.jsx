@@ -12,6 +12,8 @@ const PostCard = ({ post, onLikeToggle, onPostDeleted }) => {
     const [newComment, setNewComment] = useState('');
     const [loadingComments, setLoadingComments] = useState(false);
     const [showMenu, setShowMenu] = useState(false);
+    const [isEditing, setIsEditing] = useState(false);
+    const [editContent, setEditContent] = useState(post.contentText);
     const menuRef = useRef(null);
 
     // Close menu when clicking outside
@@ -76,6 +78,32 @@ const PostCard = ({ post, onLikeToggle, onPostDeleted }) => {
         }
     };
 
+    const handleEdit = () => {
+        setIsEditing(true);
+        setShowMenu(false);
+    };
+
+    const handleCancelEdit = () => {
+        setIsEditing(false);
+        setEditContent(post.contentText);
+    };
+
+    const handleSaveEdit = async () => {
+        if (!editContent.trim()) {
+            alert("Post content cannot be empty");
+            return;
+        }
+
+        try {
+            await postAPI.updatePost(post.postId, { contentText: editContent });
+            post.contentText = editContent; // Update local post object
+            setIsEditing(false);
+        } catch (error) {
+            console.error("Failed to update post", error);
+            alert("Failed to update post.");
+        }
+    };
+
     const handleDelete = async () => {
         if (!confirm('Are you sure you want to delete this post?')) return;
         try {
@@ -121,7 +149,9 @@ const PostCard = ({ post, onLikeToggle, onPostDeleted }) => {
 
                         {showMenu && (
                             <div className="absolute right-0 top-full mt-1 w-48 bg-white rounded-xl shadow-lg border border-slate-100 py-1 z-50 animate-in fade-in zoom-in-95 duration-100">
-                                <button className="w-full px-4 py-2.5 text-left text-sm text-slate-700 hover:bg-slate-50 flex items-center transition-colors">
+                                <button
+                                    onClick={handleEdit}
+                                    className="w-full px-4 py-2.5 text-left text-sm text-slate-700 hover:bg-slate-50 flex items-center transition-colors">
                                     <Edit2 size={16} className="mr-2 text-blue-500" /> Edit Post
                                 </button>
                                 <button
@@ -138,7 +168,33 @@ const PostCard = ({ post, onLikeToggle, onPostDeleted }) => {
 
             {/* Content */}
             <div className="px-4 pb-3">
-                <p className="text-slate-800 whitespace-pre-wrap leading-relaxed text-[15px]">{post.contentText}</p>
+                {isEditing ? (
+                    <div className="space-y-2">
+                        <textarea
+                            value={editContent}
+                            onChange={(e) => setEditContent(e.target.value)}
+                            className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none resize-none text-slate-800"
+                            rows={4}
+                            placeholder="Edit your post..."
+                        />
+                        <div className="flex justify-end space-x-2">
+                            <button
+                                onClick={handleCancelEdit}
+                                className="px-4 py-1.5 text-sm text-slate-600 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-colors"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleSaveEdit}
+                                className="px-4 py-1.5 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+                            >
+                                Save
+                            </button>
+                        </div>
+                    </div>
+                ) : (
+                    <p className="text-slate-800 whitespace-pre-wrap leading-relaxed text-[15px]">{post.contentText}</p>
+                )}
             </div>
 
             {/* Media */}

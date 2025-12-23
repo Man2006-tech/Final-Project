@@ -30,7 +30,6 @@ public class CreateEventRequestDTO {
     private String description;
 
     @NotNull
-    @Future
     private LocalDateTime startTime;
 
     @NotNull

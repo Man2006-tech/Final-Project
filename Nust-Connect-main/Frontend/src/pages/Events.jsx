@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
-import { Calendar, MapPin, Users, Clock, Plus, Ticket, Star, Heart, CreditCard, Upload, CheckCircle, X, ChevronRight, AlertTriangle, Image as ImageIcon, Briefcase } from 'lucide-react';
+import { Calendar, MapPin, Users, Clock, Plus, Ticket, Star, Heart, CreditCard, Upload, CheckCircle, X, ChevronRight, AlertTriangle, Image as ImageIcon, Briefcase, Trash2 } from 'lucide-react';
 import Card from '../components/common/Card';
 import Button from '../components/common/Button';
-import { eventAPI, clubAPI, venueAPI } from '../services/api';
+import { eventAPI, clubAPI, venueAPI, userAPI } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 
 const Events = () => {
@@ -26,6 +26,8 @@ const Events = () => {
     const [creating, setCreating] = useState(false);
     const [createError, setCreateError] = useState('');
     const [createSuccess, setCreateSuccess] = useState(false);
+    const [selectedImageFile, setSelectedImageFile] = useState(null);
+    const [uploadingImage, setUploadingImage] = useState(false);
     const [createData, setCreateData] = useState({
         title: '',
         description: '',
@@ -89,12 +91,16 @@ const Events = () => {
         try {
             setLoading(true);
             const response = await eventAPI.getAllEvents();
+            console.log("API Response:", response);
+            console.log("Response data:", response.data);
             // Ensure we handle Page object or List depending on backend response
             const allEvents = response.data.content || response.data;
+            console.log("All events extracted:", allEvents);
             // Sort by Date Descending
             const sorted = Array.isArray(allEvents)
                 ? allEvents.sort((a, b) => new Date(a.startTime) - new Date(b.startTime))
                 : [];
+            console.log("Sorted events:", sorted);
             setEvents(sorted);
         } catch (err) {
             console.error("Failed to fetch events", err);
@@ -174,6 +180,27 @@ const Events = () => {
         }
     };
 
+    const handleImageFileSelect = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        // Validate file type
+        if (!file.type.startsWith('image/')) {
+            setCreateError('Please select an image file');
+            setTimeout(() => setCreateError(''), 3000);
+            return;
+        }
+
+        // Validate file size (max 10MB)
+        if (file.size > 10 * 1024 * 1024) {
+            setCreateError('Image size must be less than 10MB');
+            setTimeout(() => setCreateError(''), 3000);
+            return;
+        }
+
+        setSelectedImageFile(file);
+    };
+
     const handleCreateEvent = async (e) => {
         e.preventDefault();
         setCreating(true);
@@ -186,17 +213,66 @@ const Events = () => {
         }
 
         try {
+            let imageUrl = createData.eventImageUrl;
+
+            // Upload image if file is selected
+            if (selectedImageFile) {
+                console.log("Uploading image file:", selectedImageFile);
+                setUploadingImage(true);
+                const formData = new FormData();
+                formData.append('file', selectedImageFile);
+
+                const uploadResponse = await userAPI.uploadFile(formData);
+                console.log("Upload response:", uploadResponse);
+                const relativeUrl = uploadResponse.data.fileDownloadUri;
+                // Convert relative URL to absolute URL
+                imageUrl = relativeUrl.startsWith('http')
+                    ? relativeUrl
+                    : `http://localhost:8081${relativeUrl}`;
+                console.log("Image URL from upload:", imageUrl);
+                setUploadingImage(false);
+            }
+
+            console.log("Final image URL to be sent:", imageUrl);
+
+            // Validate dates
+            if (!createData.startTime || !createData.endTime) {
+                setCreateError("Please select both start and end times");
+                setCreating(false);
+                return;
+            }
+
+            const startDate = new Date(createData.startTime);
+            const endDate = new Date(createData.endTime);
+
+            if (endDate <= startDate) {
+                setCreateError("End time must be after start time");
+                setCreating(false);
+                return;
+            }
+
             // Format dates for backend: LocalDateTime expects 'yyyy-MM-ddTHH:mm:ss'
             const formattedStart = createData.startTime + ":00";
             const formattedEnd = createData.endTime + ":00";
 
+            console.log("Start time:", formattedStart);
+            console.log("End time:", formattedEnd);
+
+            // Build payload with only the fields expected by CreateEventRequestDTO
             const payload = {
-                ...createData,
+                clubId: parseInt(createData.clubId),
+                venueId: createData.venueId ? parseInt(createData.venueId) : null,
+                title: createData.title,
+                description: createData.description,
                 startTime: formattedStart,
                 endTime: formattedEnd,
+                maxAttendees: createData.maxAttendees,
+                isPublic: createData.isPublic,
+                eventImageUrl: imageUrl || 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&q=80&w=2070',
+                ticketPrice: createData.ticketPrice,
                 hasTickets: createData.ticketPrice > 0,
-                // Add default image if empty
-                eventImageUrl: createData.eventImageUrl || 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&q=80&w=2070'
+                requiresRegistration: createData.requiresRegistration,
+                qrCodeRequired: false
             };
 
             await eventAPI.createEvent(user.userId, payload);
@@ -207,6 +283,7 @@ const Events = () => {
                 setShowCreateModal(false);
                 setCreateSuccess(false);
                 setCreating(false);
+                setSelectedImageFile(null);
                 setCreateData({
                     title: '', description: '', startTime: '', endTime: '',
                     venueName: '', maxAttendees: 100, ticketPrice: 0, eventImageUrl: '',
@@ -217,9 +294,30 @@ const Events = () => {
             }, 2000);
 
         } catch (err) {
-            console.error(err);
-            setCreateError(err.response?.data?.message || err.message || "Failed to create event");
+            console.error("Event creation error:", err);
+            console.error("Error response:", err.response?.data);
+            const errorMsg = err.response?.data?.message ||
+                           err.response?.data?.error ||
+                           (err.response?.data?.errors ? JSON.stringify(err.response.data.errors) : null) ||
+                           err.message ||
+                           "Failed to create event";
+            setCreateError(errorMsg);
             setCreating(false);
+            setUploadingImage(false);
+        }
+    };
+
+    const handleDeleteEvent = async (eventId) => {
+        if (!window.confirm('Are you sure you want to delete this event?')) {
+            return;
+        }
+
+        try {
+            await eventAPI.deleteEvent(eventId);
+            fetchEvents(); // Refresh events list
+        } catch (err) {
+            console.error("Failed to delete event:", err);
+            alert(err.response?.data?.message || "Failed to delete event");
         }
     };
 
@@ -385,16 +483,38 @@ const Events = () => {
                                     </div>
                                 </div>
 
-                                <Button
-                                    onClick={() => handleRegisterClick(event)}
-                                    disabled={new Date(event.startTime) < new Date()}
-                                    className={`w-full ${new Date(event.startTime) < new Date()
-                                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                                        : 'bg-purple-600 hover:bg-purple-700 text-white'
-                                        }`}
-                                >
-                                    {new Date(event.startTime) < new Date() ? 'Event Ended' : 'Register Now'}
-                                </Button>
+                                {event.createdBy?.userId === user?.userId || user?.role === 'ADMIN' ? (
+                                    <div className="flex gap-2">
+                                        <Button
+                                            onClick={() => handleDeleteEvent(event.eventId)}
+                                            className="flex-1 bg-red-600 hover:bg-red-700 text-white"
+                                        >
+                                            <Trash2 size={16} className="mr-2" />
+                                            Delete
+                                        </Button>
+                                        <Button
+                                            onClick={() => handleRegisterClick(event)}
+                                            disabled={new Date(event.startTime) < new Date()}
+                                            className={`flex-1 ${new Date(event.startTime) < new Date()
+                                                ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                                                : 'bg-purple-600 hover:bg-purple-700 text-white'
+                                                }`}
+                                        >
+                                            {new Date(event.startTime) < new Date() ? 'Event Ended' : 'Register'}
+                                        </Button>
+                                    </div>
+                                ) : (
+                                    <Button
+                                        onClick={() => handleRegisterClick(event)}
+                                        disabled={new Date(event.startTime) < new Date()}
+                                        className={`w-full ${new Date(event.startTime) < new Date()
+                                            ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                                            : 'bg-purple-600 hover:bg-purple-700 text-white'
+                                            }`}
+                                    >
+                                        {new Date(event.startTime) < new Date() ? 'Event Ended' : 'Register Now'}
+                                    </Button>
+                                )}
                             </div>
                         </Card>
                     ))}
@@ -571,8 +691,42 @@ const Events = () => {
                                             </div>
                                         </div>
 
-                                        <div className="space-y-1">
-                                            <label className="text-sm font-medium text-gray-700">Banner Image URL</label>
+                                        <div className="space-y-2">
+                                            <label className="text-sm font-medium text-gray-700">Banner Image</label>
+
+                                            {/* File Upload Option */}
+                                            <div className="space-y-1">
+                                                <label className="flex items-center justify-center w-full px-4 py-3 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-purple-500 hover:bg-purple-50 transition-colors">
+                                                    <Upload size={20} className="text-gray-400 mr-2" />
+                                                    <span className="text-sm text-gray-600">
+                                                        {selectedImageFile ? selectedImageFile.name : 'Click to upload image'}
+                                                    </span>
+                                                    <input
+                                                        type="file"
+                                                        accept="image/*"
+                                                        className="hidden"
+                                                        onChange={handleImageFileSelect}
+                                                    />
+                                                </label>
+                                                {selectedImageFile && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setSelectedImageFile(null)}
+                                                        className="text-xs text-red-500 hover:text-red-700 flex items-center gap-1"
+                                                    >
+                                                        <X size={14} /> Remove file
+                                                    </button>
+                                                )}
+                                            </div>
+
+                                            {/* Divider */}
+                                            <div className="flex items-center gap-2">
+                                                <div className="flex-1 border-t border-gray-300"></div>
+                                                <span className="text-xs text-gray-500">OR</span>
+                                                <div className="flex-1 border-t border-gray-300"></div>
+                                            </div>
+
+                                            {/* URL Input Option */}
                                             <div className="flex">
                                                 <div className="bg-gray-100 border border-r-0 border-gray-300 rounded-l-lg px-3 flex items-center">
                                                     <ImageIcon size={18} className="text-gray-500" />
@@ -583,22 +737,23 @@ const Events = () => {
                                                     className="w-full px-4 py-2 rounded-r-lg border border-gray-300 focus:ring-2 focus:ring-purple-500 outline-none"
                                                     value={createData.eventImageUrl}
                                                     onChange={(e) => setCreateData({ ...createData, eventImageUrl: e.target.value })}
+                                                    disabled={selectedImageFile !== null}
                                                 />
                                             </div>
-                                            <p className="text-xs text-gray-500">Leave empty for a random default image.</p>
+                                            <p className="text-xs text-gray-500">Upload a file or enter an image URL. Leave empty for a default image.</p>
                                         </div>
                                     </div>
 
                                     <div className="flex justify-end space-x-3 pt-4 border-t border-gray-100">
-                                        <Button type="button" variant="ghost" onClick={() => setShowCreateModal(false)}>
+                                        <Button type="button" variant="ghost" onClick={() => setShowCreateModal(false)} disabled={creating || uploadingImage}>
                                             Cancel
                                         </Button>
                                         <Button
                                             type="submit"
-                                            loading={creating}
+                                            loading={creating || uploadingImage}
                                             className="bg-purple-600 hover:bg-purple-700 text-white"
                                         >
-                                            Create Event
+                                            {uploadingImage ? 'Uploading Image...' : creating ? 'Creating...' : 'Create Event'}
                                         </Button>
                                     </div>
                                 </form>

@@ -42,7 +42,8 @@ public class SecurityConfig {
                                 "/api/auth/**",
                                 "/api/public/**",
                                 "/actuator/health",
-                                "/actuator/info"
+                                "/actuator/info",
+                                "/uploads/**"
                         ).permitAll()
 
                         // Admin only endpoints

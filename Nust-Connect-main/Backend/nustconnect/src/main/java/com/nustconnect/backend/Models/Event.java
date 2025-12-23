@@ -1,5 +1,6 @@
 package com.nustconnect.backend.Models;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.nustconnect.backend.Enums.EventApprovalStatus;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Future;
@@ -33,11 +34,11 @@ public class Event extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long eventId;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "club_id")
     private Club club;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "venue_id")
     private Venue venue;
 
@@ -52,7 +53,6 @@ public class Event extends BaseEntity {
     private String description;
 
     @NotNull(message = "Start time is required")
-    @Future(message = "Start time must be in the future")
     @Column(name = "start_time", nullable = false)
     private LocalDateTime startTime;
 
@@ -75,7 +75,7 @@ public class Event extends BaseEntity {
     @Column(name = "event_image_url", length = 500)
     private String eventImageUrl;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "created_by")
     private User createdBy;
 
@@ -103,6 +103,7 @@ public class Event extends BaseEntity {
     private Boolean qrCodeRequired = false;
 
     @OneToMany(mappedBy = "event", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnore
     @Builder.Default
     private List<EventRegistration> registrations = new ArrayList<>();
 

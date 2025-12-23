@@ -24,4 +24,5 @@ public class RideShareResponseDTO {
     private String status;
     private String contactNumber;
     private LocalDateTime createdAt;
+    private Boolean hasUserRequested; // Whether the current user has already requested this ride
 }

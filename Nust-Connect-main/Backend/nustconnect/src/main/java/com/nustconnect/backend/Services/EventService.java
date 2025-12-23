@@ -43,7 +43,13 @@ public class EventService {
         event.setCreatedBy(creator);
         event.setClub(club);
         event.setCurrentAttendees(0);
-        event.setApprovalStatus(EventApprovalStatus.PENDING);
+
+        // Auto-approve events created by ADMIN or FACULTY, otherwise set to PENDING
+        if (creator.getRole().name().equals("ADMIN") || creator.getRole().name().equals("FACULTY")) {
+            event.setApprovalStatus(EventApprovalStatus.APPROVED);
+        } else {
+            event.setApprovalStatus(EventApprovalStatus.PENDING);
+        }
 
         if (event.getVenue() != null && event.getVenue().getVenueId() != null) {
             Venue venue = venueRepository.findById(event.getVenue().getVenueId())

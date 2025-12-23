@@ -47,7 +47,7 @@ public class FoundItem extends BaseEntity {
     @Column(name = "date_found", nullable = false)
     private LocalDateTime dateFound;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "found_by", nullable = false)
     private User foundBy;
 
@@ -67,7 +67,7 @@ public class FoundItem extends BaseEntity {
     @Builder.Default
     private String status = "ACTIVE"; // ACTIVE, CLAIMED, CLOSED
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "claimed_by")
     private User claimedBy;
 

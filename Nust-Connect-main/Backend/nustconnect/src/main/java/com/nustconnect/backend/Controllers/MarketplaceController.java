@@ -62,8 +62,14 @@ public class MarketplaceController {
     public ResponseEntity<Page<MarketplaceItemResponseDTO>> getAllItems(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
-        Page<MarketplaceItem> items = marketplaceService.getAllActiveItems(PageRequest.of(page, size));
-        return ResponseEntity.ok(items.map(this::mapToItemResponseDTO));
+        try {
+            Page<MarketplaceItem> items = marketplaceService.getAllActiveItems(PageRequest.of(page, size));
+            Page<MarketplaceItemResponseDTO> response = items.map(this::mapToItemResponseDTO);
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            e.printStackTrace(); // This will show in backend console
+            throw e;
+        }
     }
 
     @GetMapping("/items/search")
@@ -169,11 +175,14 @@ public class MarketplaceController {
     }
 
     private UserSummaryDTO mapToUserSummaryDTO(User user) {
+        if (user == null) return null;
+
         String profilePicture = null;
         try {
             Profile profile = profileService.getProfileByUserId(user.getUserId());
             profilePicture = profile.getProfilePicture();
         } catch (Exception e) {
+            // Profile doesn't exist, use null
         }
         return UserSummaryDTO.builder()
                 .userId(user.getUserId())

@@ -115,6 +115,13 @@ public class EventController {
                 .ok(registrations.stream().map(this::mapToRegistrationResponseDTO).collect(Collectors.toList()));
     }
 
+    @DeleteMapping("/{eventId}")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('FACULTY')")
+    public ResponseEntity<String> deleteEvent(@PathVariable Long eventId) {
+        eventService.deleteEvent(eventId);
+        return ResponseEntity.ok("Event deleted successfully");
+    }
+
     private EventResponseDTO mapToEventResponseDTO(Event event) {
         return EventResponseDTO.builder()
                 .eventId(event.getEventId())

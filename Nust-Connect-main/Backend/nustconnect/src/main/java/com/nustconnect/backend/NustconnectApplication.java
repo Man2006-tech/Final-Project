@@ -19,8 +19,10 @@ public class NustconnectApplication {
 	}
 
 	@Bean
-	public CommandLineRunner dataLoader(UserRepository userRepository, PasswordEncoder passwordEncoder) {
+	public CommandLineRunner dataLoader(UserRepository userRepository,
+										 PasswordEncoder passwordEncoder) {
 		return args -> {
+			// Create admin user
 			String adminEmail = "admin@seecs.edu.pk";
 			if (!userRepository.existsByEmail(adminEmail)) {
 				User admin = User.builder()
